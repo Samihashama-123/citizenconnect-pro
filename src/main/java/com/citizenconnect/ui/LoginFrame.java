@@ -456,15 +456,17 @@ private JPanel createFeatureLabel(String text) {
 
         registerButton.setMargin(new Insets(0, 0, 0, 0));
 
-        registerButton.addActionListener(e -> {
+        
+registerButton.addActionListener(e -> {
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Registration screen will be added next.",
-                    "Citizen Registration",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-        });
+    RegisterFrame registerFrame = new RegisterFrame(this);
+
+    registerFrame.setVisible(true);
+
+    // Temporarily hide Login Screen
+    this.setVisible(false);
+});
+
 
         JPanel registerPanel = new JPanel(
                 new FlowLayout(FlowLayout.CENTER, 0, 0)
