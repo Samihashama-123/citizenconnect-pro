@@ -1,0 +1,27 @@
+# Maven generated files
+target/
+*.class
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Environment and secret files
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Operating system files
+.DS_Store
+Thumbs.db
