@@ -401,19 +401,16 @@ private JPanel createFeatureLabel(String text) {
         rememberMe.setSelected(false);
 
         JButton forgotPassword =
-                createLinkButton("Forgot password?");
+        createLinkButton("Forgot password?");
 
         forgotPassword.addActionListener(e -> {
+        ForgotPasswordFrame forgotFrame =
+            new ForgotPasswordFrame(this);
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Password recovery will be available "
-                    + "after authentication integration.",
-                    "Forgot Password",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+        forgotFrame.setVisible(true);
+        this.setVisible(false);
         });
-
+        
         optionsPanel.add(rememberMe, BorderLayout.WEST);
         optionsPanel.add(forgotPassword, BorderLayout.EAST);
 
