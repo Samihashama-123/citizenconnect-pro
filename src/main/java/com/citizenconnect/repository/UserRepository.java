@@ -1,39 +1,99 @@
 
 package com.citizenconnect.repository;
 
-import com.mongodb.MongoException;
+import com.citizenconnect.config.MongoDBConnection;
 import com.mongodb.MongoWriteException;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Filters;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
-
-import static com.mongodb.client.model.Indexes.ascending;
+import java.util.Locale;
 
 public class UserRepository {
 
-    private static final String DATABASE_NAME = "citizenconnect_db";
     private static final String COLLECTION_NAME = "users";
 
     private static final int ITERATIONS = 210000;
     private static final int KEY_LENGTH = 256;
     private static final int SALT_LENGTH = 16;
 
+    private static final int MIN_ITERATIONS = 100000;
+    private static final int MAX_ITERATIONS = 2000000;
+
+    private static final SecureRandom SECURE_RANDOM =
+            new SecureRandom();
+
     public static class DuplicateEmailException extends Exception {
+
         public DuplicateEmailException() {
             super("An account with this email already exists.");
         }
     }
+
+    private MongoCollection<Document> getUsersCollection() {
+
+        return MongoDBConnection.getDatabase()
+                .getCollection(COLLECTION_NAME);
+    }
+
+    // =========================================
+    // REGISTRATION VALIDATION
+    // =========================================
+
+    private void validateRegistration(
+            String name,
+            String email,
+            String phone,
+            String address,
+            char[] password
+    ) {
+
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Full name is required."
+            );
+        }
+
+        if (email == null || email.isBlank()
+                || !email.trim().matches(
+                        "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+                )) {
+
+            throw new IllegalArgumentException(
+                    "Please provide a valid email address."
+            );
+        }
+
+        if (phone == null || phone.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Phone number is required."
+            );
+        }
+
+        if (address == null || address.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Address is required."
+            );
+        }
+
+        if (password == null || password.length == 0) {
+            throw new IllegalArgumentException(
+                    "Password is required."
+            );
+        }
+    }
+
+    // =========================================
+    // REGISTRATION
+    // =========================================
 
     public void registerCitizen(
             String name,
@@ -43,70 +103,69 @@ public class UserRepository {
             char[] password
     ) throws Exception {
 
-        String uri = System.getenv("MONGODB_URI");
-
-        if (uri == null || uri.isBlank()) {
-            throw new IllegalStateException(
-                    "MONGODB_URI environment variable is missing."
-            );
-        }
+        validateRegistration(
+                name, email, phone, address, password
+        );
 
         String normalizedEmail =
-                email.trim().toLowerCase(java.util.Locale.ROOT);
+                email.trim().toLowerCase(Locale.ROOT);
 
-        try (MongoClient client = MongoClients.create(uri)) {
+        byte[] salt = new byte[SALT_LENGTH];
+        byte[] hash = null;
 
-            MongoDatabase database =
-                    client.getDatabase(DATABASE_NAME);
+        try {
 
-            MongoCollection<Document> users =
-                    database.getCollection(COLLECTION_NAME);
+            SECURE_RANDOM.nextBytes(salt);
 
-            // Enforce unique emails at database level.
-            users.createIndex(
-                    ascending("email"),
-                    new IndexOptions().unique(true)
-            );
+            hash = hashPassword(password, salt);
 
-            byte[] salt = new byte[SALT_LENGTH];
-            new SecureRandom().nextBytes(salt);
+            Date currentDate = new Date();
 
-            byte[] hash = hashPassword(password, salt);
+            Document user = new Document()
+                    .append("fullName", name.trim())
+                    .append("email", normalizedEmail)
+                    .append("phone", phone.trim())
+                    .append("address", address.trim())
+                    .append(
+                            "passwordHash",
+                            Base64.getEncoder().encodeToString(hash)
+                    )
+                    .append(
+                            "passwordSalt",
+                            Base64.getEncoder().encodeToString(salt)
+                    )
+                    .append("passwordIterations", ITERATIONS)
+                    .append("role", "CITIZEN")
+                    .append("accountStatus", "ACTIVE")
+                    .append("createdAt", currentDate)
+                    .append("updatedAt", currentDate);
 
             try {
-                Document user = new Document()
-                        .append("fullName", name)
-                        .append("email", normalizedEmail)
-                        .append("phone", phone)
-                        .append("address", address)
-                        .append(
-                                "passwordHash",
-                                Base64.getEncoder().encodeToString(hash)
-                        )
-                        .append(
-                                "passwordSalt",
-                                Base64.getEncoder().encodeToString(salt)
-                        )
-                        .append("passwordIterations", ITERATIONS)
-                        .append("role", "CITIZEN")
-                        .append("createdAt", Date.from(Instant.now()));
 
-                try {
-                    users.insertOne(user);
+                getUsersCollection().insertOne(user);
 
-                } catch (MongoWriteException e) {
-                    if (e.getCode() == 11000) {
-                        throw new DuplicateEmailException();
-                    }
-                    throw e;
+            } catch (MongoWriteException e) {
+
+                if (e.getCode() == 11000) {
+                    throw new DuplicateEmailException();
                 }
 
-            } finally {
-                Arrays.fill(hash, (byte) 0);
-                Arrays.fill(salt, (byte) 0);
+                throw e;
             }
+
+        } finally {
+
+            if (hash != null) {
+                Arrays.fill(hash, (byte) 0);
+            }
+
+            Arrays.fill(salt, (byte) 0);
         }
     }
+
+    // =========================================
+    // PASSWORD HASHING
+    // =========================================
 
     private byte[] hashPassword(
             char[] password,
@@ -121,6 +180,7 @@ public class UserRepository {
         );
 
         try {
+
             SecretKeyFactory factory =
                     SecretKeyFactory.getInstance(
                             "PBKDF2WithHmacSHA256"
@@ -129,118 +189,182 @@ public class UserRepository {
             return factory.generateSecret(spec).getEncoded();
 
         } finally {
+
             spec.clearPassword();
         }
     }
-    
+
     // =========================================
-    // LOGIN AUTHENTICATION
+    // AUTHENTICATED USER
     // =========================================
 
     public record AuthenticatedUser(
+            String id,
             String fullName,
             String email,
             String role
-    ) {}
+    ) {
+
+        // Backward-compatible constructor
+        public AuthenticatedUser(
+                String fullName,
+                String email,
+                String role
+        ) {
+            this(null, fullName, email, role);
+        }
+
+        // Alternative readable user ID accessor
+        public String userId() {
+            return id;
+        }
+    }
+
+    // =========================================
+    // LOGIN AUTHENTICATION
+    // =========================================
 
     public AuthenticatedUser authenticate(
             String email,
             char[] password
     ) throws Exception {
 
-        String uri = System.getenv("MONGODB_URI");
+        if (email == null || email.isBlank()
+                || password == null || password.length == 0) {
 
-        if (uri == null || uri.isBlank()) {
-            throw new IllegalStateException(
-                    "MONGODB_URI environment variable is missing."
-            );
+            return null;
         }
 
         String normalizedEmail =
-                email.trim().toLowerCase(java.util.Locale.ROOT);
+                email.trim().toLowerCase(Locale.ROOT);
 
-        try (MongoClient client = MongoClients.create(uri)) {
+        Document user = getUsersCollection().find(
+                Filters.eq("email", normalizedEmail)
+        ).first();
 
-            MongoDatabase database =
-                    client.getDatabase(DATABASE_NAME);
+        if (user == null) {
+            return null;
+        }
 
-            MongoCollection<Document> users =
-                    database.getCollection(COLLECTION_NAME);
+        String storedHash = user.getString("passwordHash");
+        String storedSalt = user.getString("passwordSalt");
+        Integer iterations = user.getInteger("passwordIterations");
 
-            Document user = users.find(
-                    new Document("email", normalizedEmail)
-            ).first();
+        if (storedHash == null
+                || storedSalt == null
+                || iterations == null
+                || iterations < MIN_ITERATIONS
+                || iterations > MAX_ITERATIONS) {
 
-            if (user == null) {
+            return null;
+        }
+
+        byte[] salt = null;
+        byte[] expectedHash = null;
+        byte[] calculatedHash = null;
+
+        PBEKeySpec spec = null;
+
+        try {
+
+            salt = Base64.getDecoder().decode(storedSalt);
+            expectedHash = Base64.getDecoder().decode(storedHash);
+
+            if (salt.length != SALT_LENGTH
+                    || expectedHash.length != KEY_LENGTH / 8) {
+
                 return null;
             }
 
-            String storedHash = user.getString("passwordHash");
-            String storedSalt = user.getString("passwordSalt");
-            Integer iterations = user.getInteger("passwordIterations");
-
-            if (storedHash == null ||
-                    storedSalt == null ||
-                    iterations == null ||
-                    iterations < 100000) {
-                return null;
-            }
-
-            byte[] salt =
-                    Base64.getDecoder().decode(storedSalt);
-
-            byte[] expectedHash =
-                    Base64.getDecoder().decode(storedHash);
-
-            byte[] calculatedHash = null;
-
-            PBEKeySpec spec = new PBEKeySpec(
+            spec = new PBEKeySpec(
                     password,
                     salt,
                     iterations,
                     expectedHash.length * 8
             );
 
-            boolean passwordMatches;
+            SecretKeyFactory factory =
+                    SecretKeyFactory.getInstance(
+                            "PBKDF2WithHmacSHA256"
+                    );
 
-            try {
+            calculatedHash =
+                    factory.generateSecret(spec).getEncoded();
 
-                SecretKeyFactory factory =
-                        SecretKeyFactory.getInstance(
-                                "PBKDF2WithHmacSHA256"
-                        );
-
-                calculatedHash =
-                        factory.generateSecret(spec).getEncoded();
-
-                passwordMatches =
-                        java.security.MessageDigest.isEqual(
-                                expectedHash,
-                                calculatedHash
-                        );
-
-            } finally {
-
-                spec.clearPassword();
-
-                Arrays.fill(salt, (byte) 0);
-                Arrays.fill(expectedHash, (byte) 0);
-
-                if (calculatedHash != null) {
-                    Arrays.fill(calculatedHash, (byte) 0);
-                }
-            }
+            boolean passwordMatches =
+                    MessageDigest.isEqual(
+                            expectedHash,
+                            calculatedHash
+                    );
 
             if (!passwordMatches) {
                 return null;
             }
 
-            return new AuthenticatedUser(
-                    user.getString("fullName"),
-                    user.getString("email"),
-                    user.getString("role")
-            );
-        }
-    }
+        } catch (IllegalArgumentException e) {
 
+            // Invalid Base64 credentials
+            return null;
+
+        } finally {
+
+            if (spec != null) {
+                spec.clearPassword();
+            }
+
+            if (salt != null) {
+                Arrays.fill(salt, (byte) 0);
+            }
+
+            if (expectedHash != null) {
+                Arrays.fill(expectedHash, (byte) 0);
+            }
+
+            if (calculatedHash != null) {
+                Arrays.fill(calculatedHash, (byte) 0);
+            }
+        }
+
+        // =====================================
+        // ACCOUNT STATUS CHECK
+        // =====================================
+
+        String accountStatus = user.getString("accountStatus");
+
+        // Older accounts without accountStatus remain ACTIVE.
+        if (accountStatus != null
+                && !accountStatus.equalsIgnoreCase("ACTIVE")) {
+
+            return null;
+        }
+
+        // =====================================
+        // ROLE CHECK
+        // =====================================
+
+        String role = user.getString("role");
+
+        if (!"CITIZEN".equals(role)
+                && !"ADMIN".equals(role)) {
+
+            return null;
+        }
+
+        // =====================================
+        // RETURN AUTHENTICATED USER
+        // =====================================
+
+        ObjectId userObjectId = user.getObjectId("_id");
+
+        if (userObjectId == null) {
+            return null;
+        }
+
+        return new AuthenticatedUser(
+                userObjectId.toHexString(),
+                user.getString("fullName"),
+                user.getString("email"),
+                role
+        );
+    }
 }

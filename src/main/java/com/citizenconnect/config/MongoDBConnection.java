@@ -10,27 +10,55 @@ public class MongoDBConnection {
 
     private static final String DATABASE_NAME = "citizenconnect_db";
 
-    public static void main(String[] args) {
+    private static MongoClient mongoClient;
 
-        String uri = System.getenv("MONGODB_URI");
+    private MongoDBConnection() {
+        // Prevent object creation
+    }
 
-        if (uri == null || uri.isBlank()) {
-            System.err.println("MONGODB_URI environment variable is not set.");
-            return;
+    // Get shared MongoClient
+    public static synchronized MongoClient getClient() {
+
+        if (mongoClient == null) {
+
+            String uri = System.getenv("MONGODB_URI");
+
+            if (uri == null || uri.isBlank()) {
+                throw new IllegalStateException(
+                        "MONGODB_URI environment variable is not set."
+                );
+            }
+
+            mongoClient = MongoClients.create(uri);
         }
 
-        try (MongoClient client = MongoClients.create(uri)) {
+        return mongoClient;
+    }
 
-            MongoDatabase database = client.getDatabase(DATABASE_NAME);
+    // Get shared Database
+    public static MongoDatabase getDatabase() {
 
-            database.runCommand(new Document("ping", 1));
+        return getClient().getDatabase(DATABASE_NAME);
+    }
 
-            System.out.println("MongoDB Atlas connected successfully!");
-            System.out.println("Database: " + database.getName());
+    // Test MongoDB connection
+    public static void ping() {
 
-        } catch (Exception e) {
-            System.err.println("MongoDB connection failed!");
-            System.err.println(e.getMessage());
+        getDatabase().runCommand(new Document("ping", 1));
+
+        System.out.println("MongoDB Atlas connected successfully!");
+        System.out.println("Database: " + DATABASE_NAME);
+    }
+
+    // Close shared MongoClient
+    public static synchronized void close() {
+
+        if (mongoClient != null) {
+
+            mongoClient.close();
+            mongoClient = null;
+
+            System.out.println("MongoDB connection closed.");
         }
     }
 }
