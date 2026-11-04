@@ -1,6 +1,7 @@
 
 package com.citizenconnect.ui;
 
+import com.citizenconnect.repository.UserRepository;
 import com.citizenconnect.theme.Theme;
 import com.citizenconnect.theme.RoundedButton;
 import com.citizenconnect.theme.RoundedTextField;
@@ -13,6 +14,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 
 public class LoginFrame extends JFrame {
 
@@ -27,10 +29,12 @@ public class LoginFrame extends JFrame {
 
     private JCheckBox rememberMe;
     private JButton showHideButton;
+    private RoundedButton loginButton;
 
     private char passwordEchoChar;
     private boolean passwordVisible = false;
     private boolean passwordPlaceholder = true;
+    private boolean loginInProgress = false;
 
     public LoginFrame() {
 
@@ -57,6 +61,7 @@ public class LoginFrame extends JFrame {
         JPanel leftPanel = new JPanel();
 
         leftPanel.setBackground(Theme.NAVY);
+
         leftPanel.setLayout(
                 new BoxLayout(leftPanel, BoxLayout.Y_AXIS)
         );
@@ -65,7 +70,6 @@ public class LoginFrame extends JFrame {
                 BorderFactory.createEmptyBorder(55, 45, 45, 40)
         );
 
-        // Application name and logo
         JLabel appName = new JLabel("CitizenConnect Pro");
 
         appName.setFont(
@@ -95,7 +99,6 @@ public class LoginFrame extends JFrame {
             System.err.println("CitizenConnect logo not found.");
         }
 
-        // Subtitle
         JLabel subtitle = new JLabel(
                 "SMART PUBLIC SERVICE PLATFORM"
         );
@@ -104,7 +107,6 @@ public class LoginFrame extends JFrame {
         subtitle.setForeground(new Color(188, 211, 230));
         subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Headline
         JLabel headline = new JLabel(
                 "<html>Public services,<br>simplified.</html>"
         );
@@ -116,7 +118,6 @@ public class LoginFrame extends JFrame {
         headline.setForeground(Theme.WHITE);
         headline.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Description
         JLabel description = new JLabel(
                 "<html>A smarter way to connect citizens with<br>"
                 + "essential services and community support.</html>"
@@ -126,7 +127,6 @@ public class LoginFrame extends JFrame {
         description.setForeground(new Color(214, 228, 240));
         description.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Features
         JPanel featurePanel = new JPanel();
 
         featurePanel.setOpaque(false);
@@ -136,10 +136,7 @@ public class LoginFrame extends JFrame {
 
         featurePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        featurePanel.add(createFeatureLabel(
-                "Secure & Reliable"
-        ));
-
+        featurePanel.add(createFeatureLabel("Secure & Reliable"));
         featurePanel.add(Box.createVerticalStrut(8));
 
         featurePanel.add(createFeatureLabel(
@@ -152,7 +149,6 @@ public class LoginFrame extends JFrame {
                 "Connecting Communities"
         ));
 
-        // Footer
         JLabel footer = new JLabel(
                 "Your Service. Our Commitment."
         );
@@ -161,7 +157,6 @@ public class LoginFrame extends JFrame {
         footer.setForeground(new Color(185, 208, 227));
         footer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Assemble left panel
         leftPanel.add(appName);
         leftPanel.add(Box.createVerticalStrut(10));
         leftPanel.add(subtitle);
@@ -180,65 +175,66 @@ public class LoginFrame extends JFrame {
         return leftPanel;
     }
 
-    // Feature item without unsupported Unicode icons
-    
-private JPanel createFeatureLabel(String text) {
+    // =========================================
+    // FEATURE LABEL
+    // =========================================
 
-    JPanel item = new JPanel(
-        new FlowLayout(FlowLayout.LEFT, 0, 0)
-    );
+    private JPanel createFeatureLabel(String text) {
 
-    item.setOpaque(false);
-    item.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JPanel item = new JPanel(
+                new FlowLayout(FlowLayout.LEFT, 0, 0)
+        );
 
-    // Prevent BoxLayout from stretching the row
-    item.setMaximumSize(
-        new Dimension(Integer.MAX_VALUE, 24)
-    );
+        item.setOpaque(false);
+        item.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    JComponent checkIcon = new JComponent() {
+        item.setMaximumSize(
+                new Dimension(Integer.MAX_VALUE, 24)
+        );
 
-        @Override
-        protected void paintComponent(Graphics g) {
+        JComponent checkIcon = new JComponent() {
 
-            Graphics2D g2 = (Graphics2D) g.create();
+            @Override
+            protected void paintComponent(Graphics g) {
 
-            g2.setRenderingHint(
-                RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON
-            );
+                Graphics2D g2 = (Graphics2D) g.create();
 
-            g2.setColor(new Color(64, 214, 177));
+                g2.setRenderingHint(
+                        RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON
+                );
 
-            g2.setStroke(new BasicStroke(
-                2.2f,
-                BasicStroke.CAP_ROUND,
-                BasicStroke.JOIN_ROUND
-            ));
+                g2.setColor(new Color(64, 214, 177));
 
-            g2.drawLine(3, 9, 7, 13);
-            g2.drawLine(7, 13, 16, 4);
+                g2.setStroke(new BasicStroke(
+                        2.2f,
+                        BasicStroke.CAP_ROUND,
+                        BasicStroke.JOIN_ROUND
+                ));
 
-            g2.dispose();
-        }
+                g2.drawLine(3, 9, 7, 13);
+                g2.drawLine(7, 13, 16, 4);
 
-        @Override
-        public Dimension getPreferredSize() {
-            return new Dimension(20, 20);
-        }
-    };
+                g2.dispose();
+            }
 
-    JLabel label = new JLabel(text);
-    label.setFont(Theme.BODY);
-    label.setForeground(new Color(190, 230, 219));
+            @Override
+            public Dimension getPreferredSize() {
+                return new Dimension(20, 20);
+            }
+        };
 
-    item.add(checkIcon);
-    item.add(Box.createHorizontalStrut(10));
-    item.add(label);
+        JLabel label = new JLabel(text);
 
-    return item;
-}
+        label.setFont(Theme.BODY);
+        label.setForeground(new Color(190, 230, 219));
 
+        item.add(checkIcon);
+        item.add(Box.createHorizontalStrut(10));
+        item.add(label);
+
+        return item;
+    }
 
     // =========================================
     // RIGHT LOGIN PANEL
@@ -249,6 +245,7 @@ private JPanel createFeatureLabel(String text) {
         JPanel rightPanel = new JPanel(new GridBagLayout());
 
         rightPanel.setBackground(Theme.WHITE);
+
         rightPanel.setBorder(
                 BorderFactory.createEmptyBorder(25, 30, 25, 30)
         );
@@ -262,7 +259,6 @@ private JPanel createFeatureLabel(String text) {
         formPanel.setBackground(Theme.WHITE);
         formPanel.setPreferredSize(new Dimension(420, 500));
 
-        // Welcome
         JLabel welcomeTitle = new JLabel("Welcome Back!");
 
         welcomeTitle.setFont(Theme.TITLE);
@@ -278,44 +274,49 @@ private JPanel createFeatureLabel(String text) {
         welcomeSubtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // =====================================
-        // EMAIL
+        // EMAIL FIELD
         // =====================================
 
-        JLabel emailLabel = createFieldLabel("Email Address");
+        JLabel emailLabel =
+                createFieldLabel("Email Address");
 
         emailField = new RoundedTextField();
 
         emailField.setBackground(Theme.BACKGROUND);
-        emailField.setPreferredSize(new Dimension(420, 48));
+
+        emailField.setPreferredSize(
+                new Dimension(420, 48)
+        );
+
         emailField.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 48)
         );
 
-        emailField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        emailField.setAlignmentX(
+                Component.LEFT_ALIGNMENT
+        );
 
         setupEmailPlaceholder();
 
         // =====================================
-        // PASSWORD
+        // PASSWORD FIELD
         // =====================================
 
-        JLabel passwordLabel = createFieldLabel("Password");
+        JLabel passwordLabel =
+                createFieldLabel("Password");
 
         passwordField = new RoundedPasswordField();
 
         passwordField.setBackground(Theme.BACKGROUND);
 
-        // Store original echo character
         passwordEchoChar = passwordField.getEchoChar();
 
-        // Leave space for Show / Hide button
         passwordField.setBorder(
                 BorderFactory.createEmptyBorder(10, 15, 10, 65)
         );
 
         setupPasswordPlaceholder();
 
-        // Small Show / Hide text button
         showHideButton = new JButton("Show");
 
         showHideButton.setFont(
@@ -335,13 +336,12 @@ private JPanel createFeatureLabel(String text) {
                 Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         );
 
-        // IMPORTANT: Only ONE action listener
         showHideButton.addActionListener(
                 e -> togglePassword()
         );
 
-        // Position Show/Hide inside password field
-        JLayeredPane passwordLayer = new JLayeredPane() {
+        JLayeredPane passwordLayer =
+                new JLayeredPane() {
 
             @Override
             public void doLayout() {
@@ -377,20 +377,26 @@ private JPanel createFeatureLabel(String text) {
                 new Dimension(Integer.MAX_VALUE, 48)
         );
 
-        passwordLayer.setAlignmentX(Component.LEFT_ALIGNMENT);
+        passwordLayer.setAlignmentX(
+                Component.LEFT_ALIGNMENT
+        );
 
         // =====================================
         // REMEMBER ME / FORGOT PASSWORD
         // =====================================
 
-        JPanel optionsPanel = new JPanel(new BorderLayout());
+        JPanel optionsPanel =
+                new JPanel(new BorderLayout());
 
         optionsPanel.setBackground(Theme.WHITE);
+
         optionsPanel.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 36)
         );
 
-        optionsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        optionsPanel.setAlignmentX(
+                Component.LEFT_ALIGNMENT
+        );
 
         rememberMe = new JCheckBox("Remember me");
 
@@ -400,26 +406,39 @@ private JPanel createFeatureLabel(String text) {
         rememberMe.setFocusPainted(false);
         rememberMe.setSelected(false);
 
+        // Remember Me is UI-only until a secure
+        // session persistence mechanism is added.
+        rememberMe.setToolTipText(
+                "Session persistence will be added later"
+        );
+
         JButton forgotPassword =
-        createLinkButton("Forgot password?");
+                createLinkButton("Forgot password?");
 
         forgotPassword.addActionListener(e -> {
-        ForgotPasswordFrame forgotFrame =
-            new ForgotPasswordFrame(this);
 
-        forgotFrame.setVisible(true);
-        this.setVisible(false);
+            ForgotPasswordFrame forgotFrame =
+                    new ForgotPasswordFrame(this);
+
+            forgotFrame.setVisible(true);
+            this.setVisible(false);
         });
-        
-        optionsPanel.add(rememberMe, BorderLayout.WEST);
-        optionsPanel.add(forgotPassword, BorderLayout.EAST);
+
+        optionsPanel.add(
+                rememberMe,
+                BorderLayout.WEST
+        );
+
+        optionsPanel.add(
+                forgotPassword,
+                BorderLayout.EAST
+        );
 
         // =====================================
-        // LOGIN BUTTON
+        // SIGN IN BUTTON
         // =====================================
 
-        RoundedButton loginButton =
-                new RoundedButton("Sign In");
+        loginButton = new RoundedButton("Sign In");
 
         loginButton.setPreferredSize(
                 new Dimension(420, 50)
@@ -429,7 +448,9 @@ private JPanel createFeatureLabel(String text) {
                 new Dimension(Integer.MAX_VALUE, 50)
         );
 
-        loginButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        loginButton.setAlignmentX(
+                Component.LEFT_ALIGNMENT
+        );
 
         loginButton.addActionListener(
                 e -> validateLogin()
@@ -438,7 +459,7 @@ private JPanel createFeatureLabel(String text) {
         getRootPane().setDefaultButton(loginButton);
 
         // =====================================
-        // REGISTRATION
+        // REGISTRATION LINK
         // =====================================
 
         JLabel accountText = new JLabel(
@@ -451,26 +472,28 @@ private JPanel createFeatureLabel(String text) {
         JButton registerButton =
                 createLinkButton("Register here");
 
-        registerButton.setMargin(new Insets(0, 0, 0, 0));
+        registerButton.setMargin(
+                new Insets(0, 0, 0, 0)
+        );
 
-        
-registerButton.addActionListener(e -> {
+        registerButton.addActionListener(e -> {
 
-    RegisterFrame registerFrame = new RegisterFrame(this);
+            RegisterFrame registerFrame =
+                    new RegisterFrame(this);
 
-    registerFrame.setVisible(true);
-
-    // Temporarily hide Login Screen
-    this.setVisible(false);
-});
-
+            registerFrame.setVisible(true);
+            this.setVisible(false);
+        });
 
         JPanel registerPanel = new JPanel(
                 new FlowLayout(FlowLayout.CENTER, 0, 0)
         );
 
         registerPanel.setBackground(Theme.WHITE);
-        registerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        registerPanel.setAlignmentX(
+                Component.LEFT_ALIGNMENT
+        );
+
         registerPanel.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 35)
         );
@@ -505,7 +528,8 @@ registerButton.addActionListener(e -> {
         formPanel.add(Box.createVerticalStrut(22));
         formPanel.add(registerPanel);
 
-        GridBagConstraints gbc = new GridBagConstraints();
+        GridBagConstraints gbc =
+                new GridBagConstraints();
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -549,7 +573,8 @@ registerButton.addActionListener(e -> {
                 Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         );
 
-        button.addMouseListener(new MouseAdapter() {
+        button.addMouseListener(
+                new MouseAdapter() {
 
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -574,12 +599,14 @@ registerButton.addActionListener(e -> {
         emailField.setText(EMAIL_HINT);
         emailField.setForeground(Theme.MUTED_TEXT);
 
-        emailField.addFocusListener(new FocusAdapter() {
+        emailField.addFocusListener(
+                new FocusAdapter() {
 
             @Override
             public void focusGained(FocusEvent e) {
 
                 if (emailField.getText().equals(EMAIL_HINT)) {
+
                     emailField.setText("");
                     emailField.setForeground(Theme.TEXT);
                 }
@@ -589,6 +616,7 @@ registerButton.addActionListener(e -> {
             public void focusLost(FocusEvent e) {
 
                 if (emailField.getText().trim().isEmpty()) {
+
                     emailField.setText(EMAIL_HINT);
                     emailField.setForeground(Theme.MUTED_TEXT);
                 }
@@ -608,7 +636,8 @@ registerButton.addActionListener(e -> {
         passwordField.setText(PASSWORD_HINT);
         passwordField.setForeground(Theme.MUTED_TEXT);
 
-        passwordField.addFocusListener(new FocusAdapter() {
+        passwordField.addFocusListener(
+                new FocusAdapter() {
 
             @Override
             public void focusGained(FocusEvent e) {
@@ -641,9 +670,16 @@ registerButton.addActionListener(e -> {
 
         passwordPlaceholder = true;
 
+        passwordVisible = false;
+
         passwordField.setEchoChar((char) 0);
         passwordField.setText(PASSWORD_HINT);
         passwordField.setForeground(Theme.MUTED_TEXT);
+
+        if (showHideButton != null) {
+            showHideButton.setText("Show");
+            showHideButton.setToolTipText("Show password");
+        }
     }
 
     // =========================================
@@ -652,7 +688,6 @@ registerButton.addActionListener(e -> {
 
     private void togglePassword() {
 
-        // Do not change placeholder state
         if (passwordPlaceholder) {
             passwordField.requestFocusInWindow();
             return;
@@ -663,14 +698,12 @@ registerButton.addActionListener(e -> {
         if (passwordVisible) {
 
             passwordField.setEchoChar((char) 0);
-
             showHideButton.setText("Hide");
             showHideButton.setToolTipText("Hide password");
 
         } else {
 
             passwordField.setEchoChar(passwordEchoChar);
-
             showHideButton.setText("Show");
             showHideButton.setToolTipText("Show password");
         }
@@ -679,10 +712,14 @@ registerButton.addActionListener(e -> {
     }
 
     // =========================================
-    // FORM VALIDATION
+    // MONGODB LOGIN AUTHENTICATION
     // =========================================
 
     private void validateLogin() {
+
+        if (loginInProgress) {
+            return;
+        }
 
         String email = emailField.getText().trim();
         char[] password = passwordField.getPassword();
@@ -712,22 +749,156 @@ registerButton.addActionListener(e -> {
                 return;
             }
 
-            // The actual password requirements and credential
-            // verification will be handled by authentication service.
+            loginInProgress = true;
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Input validation passed.\n\n"
-                    + "MongoDB authentication is not connected yet.\n"
-                    + "Login will be enabled after integration.",
-                    "Authentication Pending",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+            loginButton.setEnabled(false);
+            loginButton.setText("Signing In...");
+
+            char[] passwordForWorker =
+                    Arrays.copyOf(password, password.length);
+
+            SwingWorker<UserRepository.AuthenticatedUser, Void> worker =
+                    new SwingWorker<UserRepository.AuthenticatedUser, Void>() {
+
+                @Override
+                protected UserRepository.AuthenticatedUser doInBackground()
+                        throws Exception {
+
+                    try {
+
+                        UserRepository repository =
+                                new UserRepository();
+
+                        return repository.authenticate(
+                                email,
+                                passwordForWorker
+                        );
+
+                    } finally {
+
+                        Arrays.fill(passwordForWorker, '\0');
+                    }
+                }
+
+                @Override
+                protected void done() {
+
+                    loginInProgress = false;
+
+                    loginButton.setEnabled(true);
+                    loginButton.setText("Sign In");
+
+                    try {
+
+                        UserRepository.AuthenticatedUser user = get();
+
+                        if (user == null) {
+
+                            showWarning("Invalid email or password.");
+
+                            passwordField.setText("");
+                            restorePasswordPlaceholder();
+
+                            return;
+                        }
+
+                        handleSuccessfulLogin(user);
+
+                    } catch (InterruptedException e) {
+
+                        Thread.currentThread().interrupt();
+
+                        showWarning(
+                                "Login was interrupted. Please try again."
+                        );
+
+                    } catch (ExecutionException e) {
+
+                        Throwable cause = e.getCause();
+
+                        JOptionPane.showMessageDialog(
+                                LoginFrame.this,
+                                "Unable to sign in right now.\n"
+                                + "Please check your internet connection "
+                                + "and database configuration.",
+                                "Login Error",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+
+                        if (cause != null) {
+                            System.err.println(
+                                    "Login error type: "
+                                    + cause.getClass().getSimpleName()
+                            );
+                        }
+                    }
+                }
+            };
+
+            worker.execute();
 
         } finally {
+
             Arrays.fill(password, '\0');
         }
     }
+
+    // =========================================
+    // SUCCESSFUL LOGIN / ROLE VERIFICATION
+    // =========================================
+
+    private void handleSuccessfulLogin(
+            UserRepository.AuthenticatedUser user
+    ) {
+
+        String role = user.role();
+
+        if (role == null) {
+            showWarning("Your account role is not configured.");
+            return;
+        }
+
+        switch (role) {
+
+            case "CITIZEN" -> {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Login Successful!\n\n"
+                        + "Welcome, " + user.fullName() + "!\n"
+                        + "Account Role: CITIZEN\n\n"
+                        + "Citizen Dashboard integration is pending.",
+                        "Citizen Authentication",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+
+            case "ADMIN" -> {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Login Successful!\n\n"
+                        + "Welcome, " + user.fullName() + "!\n"
+                        + "Account Role: ADMIN\n\n"
+                        + "Admin Dashboard integration is pending.",
+                        "Admin Authentication",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+
+            default -> {
+
+                showWarning(
+                        "Your account does not have permission "
+                        + "to access this application."
+                );
+            }
+        }
+    }
+
+    // =========================================
+    // WARNING MESSAGE
+    // =========================================
 
     private void showWarning(String message) {
 
