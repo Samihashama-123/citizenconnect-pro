@@ -1,11 +1,12 @@
 
 package com.citizenconnect.ui;
 
+import com.citizenconnect.repository.UserRepository;
 import com.citizenconnect.theme.Theme;
 import com.citizenconnect.theme.RoundedButton;
 import com.citizenconnect.theme.RoundedTextField;
 import com.citizenconnect.theme.RoundedPasswordField;
-
+import com.citizenconnect.config.UserSession;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
@@ -13,742 +14,854 @@ import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 
 public class LoginFrame extends JFrame {
 
-    private static final String EMAIL_HINT =
-            "Enter your email address";
+        private static final String EMAIL_HINT = "Enter your email address";
 
-    private static final String PASSWORD_HINT =
-            "Enter your password";
+        private static final String PASSWORD_HINT = "Enter your password";
 
-    private RoundedTextField emailField;
-    private RoundedPasswordField passwordField;
+        private RoundedTextField emailField;
+        private RoundedPasswordField passwordField;
 
-    private JCheckBox rememberMe;
-    private JButton showHideButton;
+        private JCheckBox rememberMe;
+        private JButton showHideButton;
+        private RoundedButton loginButton;
 
-    private char passwordEchoChar;
-    private boolean passwordVisible = false;
-    private boolean passwordPlaceholder = true;
+        private char passwordEchoChar;
+        private boolean passwordVisible = false;
+        private boolean passwordPlaceholder = true;
+        private boolean loginInProgress = false;
 
-    public LoginFrame() {
+        public LoginFrame() {
 
-        setTitle("CitizenConnect Pro - Login");
-        setSize(1100, 700);
-        setMinimumSize(new Dimension(1000, 650));
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+                setTitle("CitizenConnect Pro - Login");
+                setSize(1100, 700);
+                setMinimumSize(new Dimension(1000, 650));
+                setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                setLocationRelativeTo(null);
 
-        JPanel mainPanel = new JPanel(new GridLayout(1, 2));
+                JPanel mainPanel = new JPanel(new GridLayout(1, 2));
 
-        mainPanel.add(createBrandingPanel());
-        mainPanel.add(createLoginPanel());
+                mainPanel.add(createBrandingPanel());
+                mainPanel.add(createLoginPanel());
 
-        setContentPane(mainPanel);
-    }
-
-    // =========================================
-    // LEFT BRANDING PANEL
-    // =========================================
-
-    private JPanel createBrandingPanel() {
-
-        JPanel leftPanel = new JPanel();
-
-        leftPanel.setBackground(Theme.NAVY);
-        leftPanel.setLayout(
-                new BoxLayout(leftPanel, BoxLayout.Y_AXIS)
-        );
-
-        leftPanel.setBorder(
-                BorderFactory.createEmptyBorder(55, 45, 45, 40)
-        );
-
-        // Application name and logo
-        JLabel appName = new JLabel("CitizenConnect Pro");
-
-        appName.setFont(
-                new Font("Segoe UI", Font.BOLD, 28)
-        );
-
-        appName.setForeground(Theme.WHITE);
-        appName.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        java.net.URL logoUrl = getClass().getResource(
-                "/images/citizenconnect-logo.png"
-        );
-
-        if (logoUrl != null) {
-
-            ImageIcon originalIcon = new ImageIcon(logoUrl);
-
-            Image scaledLogo = originalIcon.getImage()
-                    .getScaledInstance(
-                            60, 60, Image.SCALE_SMOOTH
-                    );
-
-            appName.setIcon(new ImageIcon(scaledLogo));
-            appName.setIconTextGap(15);
-
-        } else {
-            System.err.println("CitizenConnect logo not found.");
+                setContentPane(mainPanel);
         }
 
-        // Subtitle
-        JLabel subtitle = new JLabel(
-                "SMART PUBLIC SERVICE PLATFORM"
-        );
+        // =========================================
+        // LEFT BRANDING PANEL
+        // =========================================
 
-        subtitle.setFont(Theme.SMALL);
-        subtitle.setForeground(new Color(188, 211, 230));
-        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        private JPanel createBrandingPanel() {
 
-        // Headline
-        JLabel headline = new JLabel(
-                "<html>Public services,<br>simplified.</html>"
-        );
+                JPanel leftPanel = new JPanel();
 
-        headline.setFont(
-                new Font("Segoe UI", Font.BOLD, 37)
-        );
+                leftPanel.setBackground(Theme.NAVY);
 
-        headline.setForeground(Theme.WHITE);
-        headline.setAlignmentX(Component.LEFT_ALIGNMENT);
+                leftPanel.setLayout(
+                                new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 
-        // Description
-        JLabel description = new JLabel(
-                "<html>A smarter way to connect citizens with<br>"
-                + "essential services and community support.</html>"
-        );
+                leftPanel.setBorder(
+                                BorderFactory.createEmptyBorder(55, 45, 45, 40));
 
-        description.setFont(Theme.BODY);
-        description.setForeground(new Color(214, 228, 240));
-        description.setAlignmentX(Component.LEFT_ALIGNMENT);
+                JLabel appName = new JLabel("CitizenConnect Pro");
 
-        // Features
-        JPanel featurePanel = new JPanel();
+                appName.setFont(
+                                new Font("Segoe UI", Font.BOLD, 28));
 
-        featurePanel.setOpaque(false);
-        featurePanel.setLayout(
-                new BoxLayout(featurePanel, BoxLayout.Y_AXIS)
-        );
+                appName.setForeground(Theme.WHITE);
+                appName.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        featurePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                java.net.URL logoUrl = getClass().getResource(
+                                "/images/citizenconnect-logo.png");
 
-        featurePanel.add(createFeatureLabel(
-                "Secure & Reliable"
-        ));
+                if (logoUrl != null) {
 
-        featurePanel.add(Box.createVerticalStrut(8));
+                        ImageIcon originalIcon = new ImageIcon(logoUrl);
 
-        featurePanel.add(createFeatureLabel(
-                "Essential Services in One Place"
-        ));
+                        Image scaledLogo = originalIcon.getImage()
+                                        .getScaledInstance(
+                                                        60, 60, Image.SCALE_SMOOTH);
 
-        featurePanel.add(Box.createVerticalStrut(8));
+                        appName.setIcon(new ImageIcon(scaledLogo));
+                        appName.setIconTextGap(15);
 
-        featurePanel.add(createFeatureLabel(
-                "Connecting Communities"
-        ));
+                } else {
+                        System.err.println("CitizenConnect logo not found.");
+                }
 
-        // Footer
-        JLabel footer = new JLabel(
-                "Your Service. Our Commitment."
-        );
+                JLabel subtitle = new JLabel(
+                                "SMART PUBLIC SERVICE PLATFORM");
 
-        footer.setFont(Theme.SMALL);
-        footer.setForeground(new Color(185, 208, 227));
-        footer.setAlignmentX(Component.LEFT_ALIGNMENT);
+                subtitle.setFont(Theme.SMALL);
+                subtitle.setForeground(new Color(188, 211, 230));
+                subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Assemble left panel
-        leftPanel.add(appName);
-        leftPanel.add(Box.createVerticalStrut(10));
-        leftPanel.add(subtitle);
+                JLabel headline = new JLabel(
+                                "<html>Public services,<br>simplified.</html>");
 
-        leftPanel.add(Box.createVerticalGlue());
+                headline.setFont(
+                                new Font("Segoe UI", Font.BOLD, 37));
 
-        leftPanel.add(headline);
-        leftPanel.add(Box.createVerticalStrut(16));
-        leftPanel.add(description);
-        leftPanel.add(Box.createVerticalStrut(32));
-        leftPanel.add(featurePanel);
+                headline.setForeground(Theme.WHITE);
+                headline.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        leftPanel.add(Box.createVerticalGlue());
-        leftPanel.add(footer);
+                JLabel description = new JLabel(
+                                "<html>A smarter way to connect citizens with<br>"
+                                                + "essential services and community support.</html>");
 
-        return leftPanel;
-    }
+                description.setFont(Theme.BODY);
+                description.setForeground(new Color(214, 228, 240));
+                description.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    // Feature item without unsupported Unicode icons
-    
-private JPanel createFeatureLabel(String text) {
+                JPanel featurePanel = new JPanel();
 
-    JPanel item = new JPanel(
-        new FlowLayout(FlowLayout.LEFT, 0, 0)
-    );
+                featurePanel.setOpaque(false);
+                featurePanel.setLayout(
+                                new BoxLayout(featurePanel, BoxLayout.Y_AXIS));
 
-    item.setOpaque(false);
-    item.setAlignmentX(Component.LEFT_ALIGNMENT);
+                featurePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    // Prevent BoxLayout from stretching the row
-    item.setMaximumSize(
-        new Dimension(Integer.MAX_VALUE, 24)
-    );
+                featurePanel.add(createFeatureLabel("Secure & Reliable"));
+                featurePanel.add(Box.createVerticalStrut(8));
 
-    JComponent checkIcon = new JComponent() {
+                featurePanel.add(createFeatureLabel(
+                                "Essential Services in One Place"));
 
-        @Override
-        protected void paintComponent(Graphics g) {
+                featurePanel.add(Box.createVerticalStrut(8));
 
-            Graphics2D g2 = (Graphics2D) g.create();
+                featurePanel.add(createFeatureLabel(
+                                "Connecting Communities"));
 
-            g2.setRenderingHint(
-                RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON
-            );
+                JLabel footer = new JLabel(
+                                "Your Service. Our Commitment.");
 
-            g2.setColor(new Color(64, 214, 177));
+                footer.setFont(Theme.SMALL);
+                footer.setForeground(new Color(185, 208, 227));
+                footer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            g2.setStroke(new BasicStroke(
-                2.2f,
-                BasicStroke.CAP_ROUND,
-                BasicStroke.JOIN_ROUND
-            ));
+                leftPanel.add(appName);
+                leftPanel.add(Box.createVerticalStrut(10));
+                leftPanel.add(subtitle);
 
-            g2.drawLine(3, 9, 7, 13);
-            g2.drawLine(7, 13, 16, 4);
+                leftPanel.add(Box.createVerticalGlue());
 
-            g2.dispose();
+                leftPanel.add(headline);
+                leftPanel.add(Box.createVerticalStrut(16));
+                leftPanel.add(description);
+                leftPanel.add(Box.createVerticalStrut(32));
+                leftPanel.add(featurePanel);
+
+                leftPanel.add(Box.createVerticalGlue());
+                leftPanel.add(footer);
+
+                return leftPanel;
         }
 
-        @Override
-        public Dimension getPreferredSize() {
-            return new Dimension(20, 20);
+        // =========================================
+        // FEATURE LABEL
+        // =========================================
+
+        private JPanel createFeatureLabel(String text) {
+
+                JPanel item = new JPanel(
+                                new FlowLayout(FlowLayout.LEFT, 0, 0));
+
+                item.setOpaque(false);
+                item.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                item.setMaximumSize(
+                                new Dimension(Integer.MAX_VALUE, 24));
+
+                JComponent checkIcon = new JComponent() {
+
+                        @Override
+                        protected void paintComponent(Graphics g) {
+
+                                Graphics2D g2 = (Graphics2D) g.create();
+
+                                g2.setRenderingHint(
+                                                RenderingHints.KEY_ANTIALIASING,
+                                                RenderingHints.VALUE_ANTIALIAS_ON);
+
+                                g2.setColor(new Color(64, 214, 177));
+
+                                g2.setStroke(new BasicStroke(
+                                                2.2f,
+                                                BasicStroke.CAP_ROUND,
+                                                BasicStroke.JOIN_ROUND));
+
+                                g2.drawLine(3, 9, 7, 13);
+                                g2.drawLine(7, 13, 16, 4);
+
+                                g2.dispose();
+                        }
+
+                        @Override
+                        public Dimension getPreferredSize() {
+                                return new Dimension(20, 20);
+                        }
+                };
+
+                JLabel label = new JLabel(text);
+
+                label.setFont(Theme.BODY);
+                label.setForeground(new Color(190, 230, 219));
+
+                item.add(checkIcon);
+                item.add(Box.createHorizontalStrut(10));
+                item.add(label);
+
+                return item;
         }
-    };
 
-    JLabel label = new JLabel(text);
-    label.setFont(Theme.BODY);
-    label.setForeground(new Color(190, 230, 219));
+        // =========================================
+        // RIGHT LOGIN PANEL
+        // =========================================
 
-    item.add(checkIcon);
-    item.add(Box.createHorizontalStrut(10));
-    item.add(label);
+        private JPanel createLoginPanel() {
 
-    return item;
-}
+                JPanel rightPanel = new JPanel(new GridBagLayout());
 
+                rightPanel.setBackground(Theme.WHITE);
 
-    // =========================================
-    // RIGHT LOGIN PANEL
-    // =========================================
+                rightPanel.setBorder(
+                                BorderFactory.createEmptyBorder(25, 30, 25, 30));
 
-    private JPanel createLoginPanel() {
+                JPanel formPanel = new JPanel();
 
-        JPanel rightPanel = new JPanel(new GridBagLayout());
+                formPanel.setLayout(
+                                new BoxLayout(formPanel, BoxLayout.Y_AXIS));
 
-        rightPanel.setBackground(Theme.WHITE);
-        rightPanel.setBorder(
-                BorderFactory.createEmptyBorder(25, 30, 25, 30)
-        );
+                formPanel.setBackground(Theme.WHITE);
+                formPanel.setPreferredSize(new Dimension(420, 500));
 
-        JPanel formPanel = new JPanel();
+                JLabel welcomeTitle = new JLabel("Welcome Back!");
 
-        formPanel.setLayout(
-                new BoxLayout(formPanel, BoxLayout.Y_AXIS)
-        );
+                welcomeTitle.setFont(Theme.TITLE);
+                welcomeTitle.setForeground(Theme.NAVY);
+                welcomeTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        formPanel.setBackground(Theme.WHITE);
-        formPanel.setPreferredSize(new Dimension(420, 500));
+                JLabel welcomeSubtitle = new JLabel(
+                                "Sign in to access your citizen services.");
 
-        // Welcome
-        JLabel welcomeTitle = new JLabel("Welcome Back!");
+                welcomeSubtitle.setFont(Theme.BODY);
+                welcomeSubtitle.setForeground(Theme.MUTED_TEXT);
+                welcomeSubtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        welcomeTitle.setFont(Theme.TITLE);
-        welcomeTitle.setForeground(Theme.NAVY);
-        welcomeTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                // =====================================
+                // EMAIL FIELD
+                // =====================================
 
-        JLabel welcomeSubtitle = new JLabel(
-                "Sign in to access your citizen services."
-        );
+                JLabel emailLabel = createFieldLabel("Email Address");
 
-        welcomeSubtitle.setFont(Theme.BODY);
-        welcomeSubtitle.setForeground(Theme.MUTED_TEXT);
-        welcomeSubtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                emailField = new RoundedTextField();
 
-        // =====================================
-        // EMAIL
-        // =====================================
+                emailField.setBackground(Theme.BACKGROUND);
 
-        JLabel emailLabel = createFieldLabel("Email Address");
+                emailField.setPreferredSize(
+                                new Dimension(420, 48));
 
-        emailField = new RoundedTextField();
+                emailField.setMaximumSize(
+                                new Dimension(Integer.MAX_VALUE, 48));
 
-        emailField.setBackground(Theme.BACKGROUND);
-        emailField.setPreferredSize(new Dimension(420, 48));
-        emailField.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 48)
-        );
+                emailField.setAlignmentX(
+                                Component.LEFT_ALIGNMENT);
 
-        emailField.setAlignmentX(Component.LEFT_ALIGNMENT);
+                setupEmailPlaceholder();
 
-        setupEmailPlaceholder();
+                // =====================================
+                // PASSWORD FIELD
+                // =====================================
 
-        // =====================================
-        // PASSWORD
-        // =====================================
+                JLabel passwordLabel = createFieldLabel("Password");
 
-        JLabel passwordLabel = createFieldLabel("Password");
+                passwordField = new RoundedPasswordField();
 
-        passwordField = new RoundedPasswordField();
+                passwordField.setBackground(Theme.BACKGROUND);
 
-        passwordField.setBackground(Theme.BACKGROUND);
+                passwordEchoChar = passwordField.getEchoChar();
 
-        // Store original echo character
-        passwordEchoChar = passwordField.getEchoChar();
+                passwordField.setBorder(
+                                BorderFactory.createEmptyBorder(10, 15, 10, 65));
 
-        // Leave space for Show / Hide button
-        passwordField.setBorder(
-                BorderFactory.createEmptyBorder(10, 15, 10, 65)
-        );
+                setupPasswordPlaceholder();
 
-        setupPasswordPlaceholder();
+                showHideButton = new JButton("Show");
 
-        // Small Show / Hide text button
-        showHideButton = new JButton("Show");
+                showHideButton.setFont(
+                                new Font("Segoe UI", Font.PLAIN, 12));
 
-        showHideButton.setFont(
-                new Font("Segoe UI", Font.PLAIN, 12)
-        );
+                showHideButton.setForeground(Theme.PRIMARY);
+                showHideButton.setContentAreaFilled(false);
+                showHideButton.setBorderPainted(false);
+                showHideButton.setFocusPainted(false);
+                showHideButton.setFocusable(false);
+                showHideButton.setMargin(new Insets(0, 0, 0, 0));
 
-        showHideButton.setForeground(Theme.PRIMARY);
-        showHideButton.setContentAreaFilled(false);
-        showHideButton.setBorderPainted(false);
-        showHideButton.setFocusPainted(false);
-        showHideButton.setFocusable(false);
-        showHideButton.setMargin(new Insets(0, 0, 0, 0));
-
-        showHideButton.setToolTipText("Show password");
+                showHideButton.setToolTipText("Show password");
 
-        showHideButton.setCursor(
-                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        );
+                showHideButton.setCursor(
+                                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // IMPORTANT: Only ONE action listener
-        showHideButton.addActionListener(
-                e -> togglePassword()
-        );
+                showHideButton.addActionListener(
+                                e -> togglePassword());
 
-        // Position Show/Hide inside password field
-        JLayeredPane passwordLayer = new JLayeredPane() {
+                JLayeredPane passwordLayer = new JLayeredPane() {
 
-            @Override
-            public void doLayout() {
+                        @Override
+                        public void doLayout() {
 
-                passwordField.setBounds(
-                        0, 0, getWidth(), getHeight()
-                );
+                                passwordField.setBounds(
+                                                0, 0, getWidth(), getHeight());
 
-                showHideButton.setBounds(
-                        getWidth() - 58,
-                        5,
-                        50,
-                        getHeight() - 10
-                );
-            }
-        };
+                                showHideButton.setBounds(
+                                                getWidth() - 58,
+                                                5,
+                                                50,
+                                                getHeight() - 10);
+                        }
+                };
 
-        passwordLayer.add(
-                passwordField,
-                JLayeredPane.DEFAULT_LAYER
-        );
+                passwordLayer.add(
+                                passwordField,
+                                JLayeredPane.DEFAULT_LAYER);
 
-        passwordLayer.add(
-                showHideButton,
-                JLayeredPane.PALETTE_LAYER
-        );
+                passwordLayer.add(
+                                showHideButton,
+                                JLayeredPane.PALETTE_LAYER);
 
-        passwordLayer.setPreferredSize(
-                new Dimension(420, 48)
-        );
+                passwordLayer.setPreferredSize(
+                                new Dimension(420, 48));
 
-        passwordLayer.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 48)
-        );
+                passwordLayer.setMaximumSize(
+                                new Dimension(Integer.MAX_VALUE, 48));
 
-        passwordLayer.setAlignmentX(Component.LEFT_ALIGNMENT);
+                passwordLayer.setAlignmentX(
+                                Component.LEFT_ALIGNMENT);
 
-        // =====================================
-        // REMEMBER ME / FORGOT PASSWORD
-        // =====================================
+                // =====================================
+                // REMEMBER ME / FORGOT PASSWORD
+                // =====================================
 
-        JPanel optionsPanel = new JPanel(new BorderLayout());
+                JPanel optionsPanel = new JPanel(new BorderLayout());
 
-        optionsPanel.setBackground(Theme.WHITE);
-        optionsPanel.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 36)
-        );
+                optionsPanel.setBackground(Theme.WHITE);
 
-        optionsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                optionsPanel.setMaximumSize(
+                                new Dimension(Integer.MAX_VALUE, 36));
 
-        rememberMe = new JCheckBox("Remember me");
+                optionsPanel.setAlignmentX(
+                                Component.LEFT_ALIGNMENT);
 
-        rememberMe.setFont(Theme.SMALL);
-        rememberMe.setForeground(Theme.TEXT);
-        rememberMe.setBackground(Theme.WHITE);
-        rememberMe.setFocusPainted(false);
-        rememberMe.setSelected(false);
+                rememberMe = new JCheckBox("Remember me");
 
-        JButton forgotPassword =
-        createLinkButton("Forgot password?");
+                rememberMe.setFont(Theme.SMALL);
+                rememberMe.setForeground(Theme.TEXT);
+                rememberMe.setBackground(Theme.WHITE);
+                rememberMe.setFocusPainted(false);
+                rememberMe.setSelected(false);
 
-        forgotPassword.addActionListener(e -> {
-        ForgotPasswordFrame forgotFrame =
-            new ForgotPasswordFrame(this);
+                // Remember Me is UI-only until a secure
+                // session persistence mechanism is added.
+                rememberMe.setToolTipText(
+                                "Session persistence will be added later");
 
-        forgotFrame.setVisible(true);
-        this.setVisible(false);
-        });
-        
-        optionsPanel.add(rememberMe, BorderLayout.WEST);
-        optionsPanel.add(forgotPassword, BorderLayout.EAST);
+                JButton forgotPassword = createLinkButton("Forgot password?");
 
-        // =====================================
-        // LOGIN BUTTON
-        // =====================================
+                forgotPassword.addActionListener(e -> {
 
-        RoundedButton loginButton =
-                new RoundedButton("Sign In");
+                        ForgotPasswordFrame forgotFrame = new ForgotPasswordFrame(this);
 
-        loginButton.setPreferredSize(
-                new Dimension(420, 50)
-        );
+                        forgotFrame.setVisible(true);
+                        this.setVisible(false);
+                });
 
-        loginButton.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 50)
-        );
+                optionsPanel.add(
+                                rememberMe,
+                                BorderLayout.WEST);
 
-        loginButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+                optionsPanel.add(
+                                forgotPassword,
+                                BorderLayout.EAST);
 
-        loginButton.addActionListener(
-                e -> validateLogin()
-        );
+                // =====================================
+                // SIGN IN BUTTON
+                // =====================================
 
-        getRootPane().setDefaultButton(loginButton);
+                loginButton = new RoundedButton("Sign In");
 
-        // =====================================
-        // REGISTRATION
-        // =====================================
+                loginButton.setPreferredSize(
+                                new Dimension(420, 50));
 
-        JLabel accountText = new JLabel(
-                "Don't have an account?"
-        );
+                loginButton.setMaximumSize(
+                                new Dimension(Integer.MAX_VALUE, 50));
 
-        accountText.setFont(Theme.SMALL);
-        accountText.setForeground(Theme.MUTED_TEXT);
+                loginButton.setAlignmentX(
+                                Component.LEFT_ALIGNMENT);
 
-        JButton registerButton =
-                createLinkButton("Register here");
+                loginButton.addActionListener(
+                                e -> validateLogin());
 
-        registerButton.setMargin(new Insets(0, 0, 0, 0));
+                getRootPane().setDefaultButton(loginButton);
 
-        
-registerButton.addActionListener(e -> {
+                // =====================================
+                // REGISTRATION LINK
+                // =====================================
 
-    RegisterFrame registerFrame = new RegisterFrame(this);
+                JLabel accountText = new JLabel(
+                                "Don't have an account?");
 
-    registerFrame.setVisible(true);
+                accountText.setFont(Theme.SMALL);
+                accountText.setForeground(Theme.MUTED_TEXT);
 
-    // Temporarily hide Login Screen
-    this.setVisible(false);
-});
+                JButton registerButton = createLinkButton("Register here");
 
+                registerButton.setMargin(
+                                new Insets(0, 0, 0, 0));
 
-        JPanel registerPanel = new JPanel(
-                new FlowLayout(FlowLayout.CENTER, 0, 0)
-        );
+                registerButton.addActionListener(e -> {
 
-        registerPanel.setBackground(Theme.WHITE);
-        registerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        registerPanel.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 35)
-        );
+                        RegisterFrame registerFrame = new RegisterFrame(this);
 
-        registerPanel.add(accountText);
-        registerPanel.add(Box.createHorizontalStrut(5));
-        registerPanel.add(registerButton);
+                        registerFrame.setVisible(true);
+                        this.setVisible(false);
+                });
 
-        // =====================================
-        // ASSEMBLE FORM
-        // =====================================
+                JPanel registerPanel = new JPanel(
+                                new FlowLayout(FlowLayout.CENTER, 0, 0));
 
-        formPanel.add(welcomeTitle);
-        formPanel.add(Box.createVerticalStrut(8));
-        formPanel.add(welcomeSubtitle);
-        formPanel.add(Box.createVerticalStrut(35));
+                registerPanel.setBackground(Theme.WHITE);
+                registerPanel.setAlignmentX(
+                                Component.LEFT_ALIGNMENT);
 
-        formPanel.add(emailLabel);
-        formPanel.add(Box.createVerticalStrut(9));
-        formPanel.add(emailField);
-        formPanel.add(Box.createVerticalStrut(22));
+                registerPanel.setMaximumSize(
+                                new Dimension(Integer.MAX_VALUE, 35));
 
-        formPanel.add(passwordLabel);
-        formPanel.add(Box.createVerticalStrut(9));
-        formPanel.add(passwordLayer);
-        formPanel.add(Box.createVerticalStrut(17));
+                registerPanel.add(accountText);
+                registerPanel.add(Box.createHorizontalStrut(5));
+                registerPanel.add(registerButton);
 
-        formPanel.add(optionsPanel);
-        formPanel.add(Box.createVerticalStrut(24));
+                // =====================================
+                // ASSEMBLE FORM
+                // =====================================
 
-        formPanel.add(loginButton);
-        formPanel.add(Box.createVerticalStrut(22));
-        formPanel.add(registerPanel);
+                formPanel.add(welcomeTitle);
+                formPanel.add(Box.createVerticalStrut(8));
+                formPanel.add(welcomeSubtitle);
+                formPanel.add(Box.createVerticalStrut(35));
 
-        GridBagConstraints gbc = new GridBagConstraints();
+                formPanel.add(emailLabel);
+                formPanel.add(Box.createVerticalStrut(9));
+                formPanel.add(emailField);
+                formPanel.add(Box.createVerticalStrut(22));
 
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.CENTER;
+                formPanel.add(passwordLabel);
+                formPanel.add(Box.createVerticalStrut(9));
+                formPanel.add(passwordLayer);
+                formPanel.add(Box.createVerticalStrut(17));
 
-        rightPanel.add(formPanel, gbc);
+                formPanel.add(optionsPanel);
+                formPanel.add(Box.createVerticalStrut(24));
 
-        return rightPanel;
-    }
+                formPanel.add(loginButton);
+                formPanel.add(Box.createVerticalStrut(22));
+                formPanel.add(registerPanel);
 
-    // =========================================
-    // FIELD LABEL
-    // =========================================
+                GridBagConstraints gbc = new GridBagConstraints();
 
-    private JLabel createFieldLabel(String text) {
+                gbc.gridx = 0;
+                gbc.gridy = 0;
+                gbc.anchor = GridBagConstraints.CENTER;
 
-        JLabel label = new JLabel(text);
+                rightPanel.add(formPanel, gbc);
 
-        label.setFont(Theme.BODY);
-        label.setForeground(Theme.TEXT);
-        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+                return rightPanel;
+        }
 
-        return label;
-    }
+        // =========================================
+        // FIELD LABEL
+        // =========================================
 
-    // =========================================
-    // LINK BUTTON
-    // =========================================
+        private JLabel createFieldLabel(String text) {
 
-    private JButton createLinkButton(String text) {
+                JLabel label = new JLabel(text);
 
-        JButton button = new JButton(text);
+                label.setFont(Theme.BODY);
+                label.setForeground(Theme.TEXT);
+                label.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        button.setFont(Theme.SMALL);
-        button.setForeground(Theme.PRIMARY);
-        button.setBorderPainted(false);
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
+                return label;
+        }
 
-        button.setCursor(
-                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        );
+        // =========================================
+        // LINK BUTTON
+        // =========================================
 
-        button.addMouseListener(new MouseAdapter() {
+        private JButton createLinkButton(String text) {
 
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setForeground(Theme.TEAL);
-            }
+                JButton button = new JButton(text);
 
-            @Override
-            public void mouseExited(MouseEvent e) {
+                button.setFont(Theme.SMALL);
                 button.setForeground(Theme.PRIMARY);
-            }
-        });
+                button.setBorderPainted(false);
+                button.setContentAreaFilled(false);
+                button.setFocusPainted(false);
 
-        return button;
-    }
+                button.setCursor(
+                                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-    // =========================================
-    // EMAIL PLACEHOLDER
-    // =========================================
+                button.addMouseListener(
+                                new MouseAdapter() {
 
-    private void setupEmailPlaceholder() {
+                                        @Override
+                                        public void mouseEntered(MouseEvent e) {
+                                                button.setForeground(Theme.TEAL);
+                                        }
 
-        emailField.setText(EMAIL_HINT);
-        emailField.setForeground(Theme.MUTED_TEXT);
+                                        @Override
+                                        public void mouseExited(MouseEvent e) {
+                                                button.setForeground(Theme.PRIMARY);
+                                        }
+                                });
 
-        emailField.addFocusListener(new FocusAdapter() {
+                return button;
+        }
 
-            @Override
-            public void focusGained(FocusEvent e) {
+        // =========================================
+        // EMAIL PLACEHOLDER
+        // =========================================
 
-                if (emailField.getText().equals(EMAIL_HINT)) {
-                    emailField.setText("");
-                    emailField.setForeground(Theme.TEXT);
+        private void setupEmailPlaceholder() {
+
+                emailField.setText(EMAIL_HINT);
+                emailField.setForeground(Theme.MUTED_TEXT);
+
+                emailField.addFocusListener(
+                                new FocusAdapter() {
+
+                                        @Override
+                                        public void focusGained(FocusEvent e) {
+
+                                                if (emailField.getText().equals(EMAIL_HINT)) {
+
+                                                        emailField.setText("");
+                                                        emailField.setForeground(Theme.TEXT);
+                                                }
+                                        }
+
+                                        @Override
+                                        public void focusLost(FocusEvent e) {
+
+                                                if (emailField.getText().trim().isEmpty()) {
+
+                                                        emailField.setText(EMAIL_HINT);
+                                                        emailField.setForeground(Theme.MUTED_TEXT);
+                                                }
+                                        }
+                                });
+        }
+
+        // =========================================
+        // PASSWORD PLACEHOLDER
+        // =========================================
+
+        private void setupPasswordPlaceholder() {
+
+                passwordPlaceholder = true;
+
+                passwordField.setEchoChar((char) 0);
+                passwordField.setText(PASSWORD_HINT);
+                passwordField.setForeground(Theme.MUTED_TEXT);
+
+                passwordField.addFocusListener(
+                                new FocusAdapter() {
+
+                                        @Override
+                                        public void focusGained(FocusEvent e) {
+
+                                                if (passwordPlaceholder) {
+
+                                                        passwordPlaceholder = false;
+                                                        passwordField.setText("");
+                                                        passwordField.setForeground(Theme.TEXT);
+
+                                                        passwordField.setEchoChar(
+                                                                        passwordVisible
+                                                                                        ? (char) 0
+                                                                                        : passwordEchoChar);
+                                                }
+                                        }
+
+                                        @Override
+                                        public void focusLost(FocusEvent e) {
+
+                                                if (passwordField.getPassword().length == 0) {
+                                                        restorePasswordPlaceholder();
+                                                }
+                                        }
+                                });
+        }
+
+        private void restorePasswordPlaceholder() {
+
+                passwordPlaceholder = true;
+
+                passwordVisible = false;
+
+                passwordField.setEchoChar((char) 0);
+                passwordField.setText(PASSWORD_HINT);
+                passwordField.setForeground(Theme.MUTED_TEXT);
+
+                if (showHideButton != null) {
+                        showHideButton.setText("Show");
+                        showHideButton.setToolTipText("Show password");
                 }
-            }
+        }
 
-            @Override
-            public void focusLost(FocusEvent e) {
+        // =========================================
+        // SHOW / HIDE PASSWORD
+        // =========================================
 
-                if (emailField.getText().trim().isEmpty()) {
-                    emailField.setText(EMAIL_HINT);
-                    emailField.setForeground(Theme.MUTED_TEXT);
-                }
-            }
-        });
-    }
-
-    // =========================================
-    // PASSWORD PLACEHOLDER
-    // =========================================
-
-    private void setupPasswordPlaceholder() {
-
-        passwordPlaceholder = true;
-
-        passwordField.setEchoChar((char) 0);
-        passwordField.setText(PASSWORD_HINT);
-        passwordField.setForeground(Theme.MUTED_TEXT);
-
-        passwordField.addFocusListener(new FocusAdapter() {
-
-            @Override
-            public void focusGained(FocusEvent e) {
+        private void togglePassword() {
 
                 if (passwordPlaceholder) {
-
-                    passwordPlaceholder = false;
-                    passwordField.setText("");
-                    passwordField.setForeground(Theme.TEXT);
-
-                    passwordField.setEchoChar(
-                            passwordVisible
-                                    ? (char) 0
-                                    : passwordEchoChar
-                    );
+                        passwordField.requestFocusInWindow();
+                        return;
                 }
-            }
 
-            @Override
-            public void focusLost(FocusEvent e) {
+                passwordVisible = !passwordVisible;
 
-                if (passwordField.getPassword().length == 0) {
-                    restorePasswordPlaceholder();
+                if (passwordVisible) {
+
+                        passwordField.setEchoChar((char) 0);
+                        showHideButton.setText("Hide");
+                        showHideButton.setToolTipText("Hide password");
+
+                } else {
+
+                        passwordField.setEchoChar(passwordEchoChar);
+                        showHideButton.setText("Show");
+                        showHideButton.setToolTipText("Show password");
                 }
-            }
-        });
-    }
 
-    private void restorePasswordPlaceholder() {
-
-        passwordPlaceholder = true;
-
-        passwordField.setEchoChar((char) 0);
-        passwordField.setText(PASSWORD_HINT);
-        passwordField.setForeground(Theme.MUTED_TEXT);
-    }
-
-    // =========================================
-    // SHOW / HIDE PASSWORD
-    // =========================================
-
-    private void togglePassword() {
-
-        // Do not change placeholder state
-        if (passwordPlaceholder) {
-            passwordField.requestFocusInWindow();
-            return;
+                passwordField.repaint();
         }
 
-        passwordVisible = !passwordVisible;
+        // =========================================
+        // MONGODB LOGIN AUTHENTICATION
+        // =========================================
 
-        if (passwordVisible) {
+        private void validateLogin() {
 
-            passwordField.setEchoChar((char) 0);
+                if (loginInProgress) {
+                        return;
+                }
 
-            showHideButton.setText("Hide");
-            showHideButton.setToolTipText("Hide password");
+                String email = emailField.getText().trim();
+                char[] password = passwordField.getPassword();
 
-        } else {
+                try {
 
-            passwordField.setEchoChar(passwordEchoChar);
+                        if (email.isEmpty() || email.equals(EMAIL_HINT)) {
 
-            showHideButton.setText("Show");
-            showHideButton.setToolTipText("Show password");
+                                showWarning("Please enter your email address.");
+                                emailField.requestFocusInWindow();
+                                return;
+                        }
+
+                        if (!email.matches(
+                                        "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+
+                                showWarning("Please enter a valid email address.");
+                                emailField.requestFocusInWindow();
+                                return;
+                        }
+
+                        if (passwordPlaceholder || password.length == 0) {
+
+                                showWarning("Please enter your password.");
+                                passwordField.requestFocusInWindow();
+                                return;
+                        }
+
+                        loginInProgress = true;
+
+                        loginButton.setEnabled(false);
+                        loginButton.setText("Signing In...");
+
+                        char[] passwordForWorker = Arrays.copyOf(password, password.length);
+
+                        SwingWorker<UserRepository.AuthenticatedUser, Void> worker = new SwingWorker<UserRepository.AuthenticatedUser, Void>() {
+
+                                @Override
+                                protected UserRepository.AuthenticatedUser doInBackground()
+                                                throws Exception {
+
+                                        try {
+
+                                                UserRepository repository = new UserRepository();
+
+                                                return repository.authenticate(
+                                                                email,
+                                                                passwordForWorker);
+
+                                        } finally {
+
+                                                Arrays.fill(passwordForWorker, '\0');
+                                        }
+                                }
+
+                                @Override
+                                protected void done() {
+
+                                        loginInProgress = false;
+
+                                        loginButton.setEnabled(true);
+                                        loginButton.setText("Sign In");
+
+                                        try {
+
+                                                UserRepository.AuthenticatedUser user = get();
+
+                                                if (user == null) {
+
+                                                        showWarning("Invalid email or password.");
+
+                                                        passwordField.setText("");
+                                                        restorePasswordPlaceholder();
+
+                                                        return;
+                                                }
+
+                                                handleSuccessfulLogin(user);
+
+                                        } catch (InterruptedException e) {
+
+                                                Thread.currentThread().interrupt();
+
+                                                showWarning(
+                                                                "Login was interrupted. Please try again.");
+
+                                        } catch (ExecutionException e) {
+
+                                                Throwable cause = e.getCause();
+
+                                                JOptionPane.showMessageDialog(
+                                                                LoginFrame.this,
+                                                                "Unable to sign in right now.\n"
+                                                                                + "Please check your internet connection "
+                                                                                + "and database configuration.",
+                                                                "Login Error",
+                                                                JOptionPane.ERROR_MESSAGE);
+
+                                                if (cause != null) {
+                                                        System.err.println(
+                                                                        "Login error type: "
+                                                                                        + cause.getClass()
+                                                                                                        .getSimpleName());
+                                                }
+                                        }
+                                }
+                        };
+
+                        worker.execute();
+
+                } finally {
+
+                        Arrays.fill(password, '\0');
+                }
         }
 
-        passwordField.repaint();
-    }
+        // =========================================
+        // SUCCESSFUL LOGIN / ROLE VERIFICATION
+        // =========================================
 
-    // =========================================
-    // FORM VALIDATION
-    // =========================================
+        private void handleSuccessfulLogin(
+                        UserRepository.AuthenticatedUser user) {
 
-    private void validateLogin() {
+                if (user == null || user.id() == null) {
 
-        String email = emailField.getText().trim();
-        char[] password = passwordField.getPassword();
+                        showWarning(
+                                        "Unable to retrieve your account information. Please try again.");
 
-        try {
+                        return;
+                }
 
-            if (email.isEmpty() || email.equals(EMAIL_HINT)) {
+                String role = user.role();
 
-                showWarning("Please enter your email address.");
-                emailField.requestFocusInWindow();
-                return;
-            }
+                if (role == null) {
+                        showWarning("Your account role is not configured.");
+                        return;
+                }
 
-            if (!email.matches(
-                    "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-            )) {
+                // Save authenticated user information
+                UserSession.setCurrentUser(user);
 
-                showWarning("Please enter a valid email address.");
-                emailField.requestFocusInWindow();
-                return;
-            }
+                switch (role) {
 
-            if (passwordPlaceholder || password.length == 0) {
+                        case "CITIZEN" -> {
 
-                showWarning("Please enter your password.");
-                passwordField.requestFocusInWindow();
-                return;
-            }
+                                JOptionPane.showMessageDialog(
+                                                this,
+                                                "Login Successful!\n\n"
+                                                                + "Welcome, " + user.fullName() + "!\n"
+                                                                + "Account Role: CITIZEN\n"
+                                                                + "User ID: " + user.id() + "\n\n"
+                                                                + "Citizen Dashboard integration is pending.",
+                                                "Citizen Authentication",
+                                                JOptionPane.INFORMATION_MESSAGE);
+                        }
 
-            // The actual password requirements and credential
-            // verification will be handled by authentication service.
+                        case "ADMIN" -> {
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Input validation passed.\n\n"
-                    + "MongoDB authentication is not connected yet.\n"
-                    + "Login will be enabled after integration.",
-                    "Authentication Pending",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+                                JOptionPane.showMessageDialog(
+                                                this,
+                                                "Login Successful!\n\n"
+                                                                + "Welcome, " + user.fullName() + "!\n"
+                                                                + "Account Role: ADMIN\n"
+                                                                + "User ID: " + user.id() + "\n\n"
+                                                                + "Admin Dashboard integration is pending.",
+                                                "Admin Authentication",
+                                                JOptionPane.INFORMATION_MESSAGE);
+                        }
 
-        } finally {
-            Arrays.fill(password, '\0');
+                        default -> {
+
+                                UserSession.clearSession();
+
+                                showWarning(
+                                                "Your account does not have permission "
+                                                                + "to access this application.");
+                        }
+                }
         }
-    }
 
-    private void showWarning(String message) {
+        // =========================================
+        // WARNING MESSAGE
+        // =========================================
 
-        JOptionPane.showMessageDialog(
-                this,
-                message,
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE
-        );
-    }
+        private void showWarning(String message) {
 
-    // =========================================
-    // MAIN METHOD
-    // =========================================
+                JOptionPane.showMessageDialog(
+                                this,
+                                message,
+                                "Validation Error",
+                                JOptionPane.WARNING_MESSAGE);
+        }
 
-    public static void main(String[] args) {
+        // =========================================
+        // MAIN METHOD
+        // =========================================
 
-        SwingUtilities.invokeLater(() -> {
+        public static void main(String[] args) {
 
-            LoginFrame frame = new LoginFrame();
-            frame.setVisible(true);
-        });
-    }
+                SwingUtilities.invokeLater(() -> {
+
+                        LoginFrame frame = new LoginFrame();
+                        frame.setVisible(true);
+                });
+        }
 }

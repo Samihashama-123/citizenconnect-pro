@@ -1,6 +1,7 @@
 
 package com.citizenconnect.ui;
 
+import com.citizenconnect.repository.UserRepository;
 import com.citizenconnect.theme.Theme;
 import com.citizenconnect.theme.RoundedButton;
 import com.citizenconnect.theme.RoundedTextField;
@@ -10,6 +11,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 
 public class RegisterFrame extends JFrame {
 
@@ -24,6 +26,9 @@ public class RegisterFrame extends JFrame {
     private RoundedPasswordField confirmPasswordField;
 
     private JCheckBox termsCheck;
+    private RoundedButton createAccountButton;
+
+    private boolean registrationInProgress = false;
 
     public RegisterFrame(LoginFrame loginFrame) {
 
@@ -42,7 +47,7 @@ public class RegisterFrame extends JFrame {
 
         setContentPane(mainPanel);
 
-        // Return to Login if Registration window closes
+        // Return to Login when registration window closes
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
@@ -71,7 +76,6 @@ public class RegisterFrame extends JFrame {
                 BorderFactory.createEmptyBorder(55, 45, 45, 40)
         );
 
-        // Logo and application name
         JLabel appName = new JLabel("CitizenConnect Pro");
 
         appName.setFont(
@@ -126,7 +130,6 @@ public class RegisterFrame extends JFrame {
         description.setForeground(new Color(214, 228, 240));
         description.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Feature highlights
         JPanel featurePanel = new JPanel();
 
         featurePanel.setOpaque(false);
@@ -152,7 +155,6 @@ public class RegisterFrame extends JFrame {
         footer.setForeground(new Color(185, 208, 227));
         footer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Assemble branding
         leftPanel.add(appName);
         leftPanel.add(Box.createVerticalStrut(10));
         leftPanel.add(subtitle);
@@ -171,7 +173,10 @@ public class RegisterFrame extends JFrame {
         return leftPanel;
     }
 
-    // Reusable checkmark row
+    // =========================================
+    // REUSABLE FEATURE ROW
+    // =========================================
+
     private JPanel createFeatureRow(String text) {
 
         JPanel row = new JPanel(
@@ -180,6 +185,7 @@ public class RegisterFrame extends JFrame {
 
         row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         row.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 24)
         );
@@ -237,7 +243,6 @@ public class RegisterFrame extends JFrame {
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBackground(Theme.WHITE);
 
-        // Scroll support for smaller screens
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(Theme.WHITE);
 
@@ -248,8 +253,8 @@ public class RegisterFrame extends JFrame {
                 new BoxLayout(form, BoxLayout.Y_AXIS)
         );
 
-form.setPreferredSize(new Dimension(420, 760));
-        // Heading
+        form.setPreferredSize(new Dimension(420, 760));
+
         JLabel title = new JLabel("Create Account");
 
         title.setFont(Theme.TITLE);
@@ -296,6 +301,7 @@ form.setPreferredSize(new Dimension(420, 760));
 
         termsPanel.setBackground(Theme.WHITE);
         termsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         termsPanel.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 32)
         );
@@ -306,7 +312,7 @@ form.setPreferredSize(new Dimension(420, 760));
         // CREATE ACCOUNT BUTTON
         // =====================================
 
-        RoundedButton createAccountButton =
+        createAccountButton =
                 new RoundedButton("Create Account");
 
         createAccountButton.setPreferredSize(
@@ -350,6 +356,7 @@ form.setPreferredSize(new Dimension(420, 760));
 
         loginPanel.setBackground(Theme.WHITE);
         loginPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         loginPanel.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 35)
         );
@@ -374,7 +381,9 @@ form.setPreferredSize(new Dimension(420, 760));
 
         addPasswordRow(form, "Password", passwordField);
         addPasswordRow(
-                form, "Confirm Password", confirmPasswordField
+                form,
+                "Confirm Password",
+                confirmPasswordField
         );
 
         form.add(Box.createVerticalStrut(6));
@@ -385,17 +394,22 @@ form.setPreferredSize(new Dimension(420, 760));
         form.add(loginPanel);
 
         GridBagConstraints gbc = new GridBagConstraints();
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.insets = new Insets(20, 15, 20, 15);
 
         centerPanel.add(form, gbc);
 
-        JScrollPane scrollPane = new JScrollPane(centerPanel);
+        JScrollPane scrollPane =
+                new JScrollPane(centerPanel);
 
         scrollPane.setBorder(null);
         scrollPane.setBackground(Theme.WHITE);
-        scrollPane.getViewport().setBackground(Theme.WHITE);
+
+        scrollPane.getViewport().setBackground(
+                Theme.WHITE
+        );
 
         scrollPane.setHorizontalScrollBarPolicy(
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
@@ -421,6 +435,7 @@ form.setPreferredSize(new Dimension(420, 760));
         field.setBackground(Theme.BACKGROUND);
 
         field.setPreferredSize(new Dimension(420, 44));
+
         field.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 44)
         );
@@ -444,6 +459,7 @@ form.setPreferredSize(new Dimension(420, 760));
         field.setBackground(Theme.BACKGROUND);
 
         field.setPreferredSize(new Dimension(420, 44));
+
         field.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 44)
         );
@@ -456,7 +472,10 @@ form.setPreferredSize(new Dimension(420, 760));
     // =========================================
 
     private void addField(
-            JPanel form, String title, RoundedTextField field) {
+            JPanel form,
+            String title,
+            RoundedTextField field
+    ) {
 
         JLabel label = new JLabel(title);
 
@@ -477,7 +496,8 @@ form.setPreferredSize(new Dimension(420, 760));
     private void addPasswordRow(
             JPanel form,
             String title,
-            RoundedPasswordField field) {
+            RoundedPasswordField field
+    ) {
 
         JLabel label = new JLabel(title);
 
@@ -487,7 +507,6 @@ form.setPreferredSize(new Dimension(420, 760));
 
         char hiddenEcho = field.getEchoChar();
 
-        // Space for Show/Hide button
         field.setBorder(
                 BorderFactory.createEmptyBorder(8, 15, 8, 65)
         );
@@ -509,10 +528,10 @@ form.setPreferredSize(new Dimension(420, 760));
                 Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         );
 
-        // A single listener handles the visibility
         toggleButton.addActionListener(e -> {
 
-            boolean currentlyHidden = field.echoCharIsSet();
+            boolean currentlyHidden =
+                    field.echoCharIsSet();
 
             field.setEchoChar(
                     currentlyHidden ? (char) 0 : hiddenEcho
@@ -529,7 +548,10 @@ form.setPreferredSize(new Dimension(420, 760));
             public void doLayout() {
 
                 field.setBounds(
-                        0, 0, getWidth(), getHeight()
+                        0,
+                        0,
+                        getWidth(),
+                        getHeight()
                 );
 
                 toggleButton.setBounds(
@@ -545,6 +567,7 @@ form.setPreferredSize(new Dimension(420, 760));
         layer.add(toggleButton, JLayeredPane.PALETTE_LAYER);
 
         layer.setPreferredSize(new Dimension(420, 44));
+
         layer.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 44)
         );
@@ -594,10 +617,14 @@ form.setPreferredSize(new Dimension(420, 760));
     }
 
     // =========================================
-    // REGISTRATION VALIDATION
+    // REGISTRATION + MONGODB VALIDATION
     // =========================================
 
     private void validateRegistration() {
+
+        if (registrationInProgress) {
+            return;
+        }
 
         String name = nameField.getText().trim();
         String email = emailField.getText().trim();
@@ -636,7 +663,6 @@ form.setPreferredSize(new Dimension(420, 760));
                 return;
             }
 
-            // Bangladesh mobile number: 01XXXXXXXXX
             if (!phone.matches("^01[3-9][0-9]{8}$")) {
                 showWarning(
                         "Enter a valid 11-digit Bangladesh mobile number."
@@ -672,15 +698,110 @@ form.setPreferredSize(new Dimension(420, 760));
                 return;
             }
 
-            // Registration is not saved until MongoDB is connected.
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Registration form validation passed.\n\n"
-                    + "Your account has NOT been created yet.\n"
-                    + "MongoDB Atlas integration is pending.",
-                    "Registration Pending",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+            // Prevent multiple registration requests
+            registrationInProgress = true;
+
+            createAccountButton.setEnabled(false);
+            createAccountButton.setText("Creating Account...");
+
+            // Make a separate password copy for background work
+            char[] passwordForWorker =
+                    Arrays.copyOf(password, password.length);
+
+            // Database operation runs outside Swing UI thread
+            SwingWorker<Void, Void> worker =
+                    new SwingWorker<Void, Void>() {
+
+                @Override
+                protected Void doInBackground() throws Exception {
+
+                    try {
+
+                        UserRepository repository =
+                                new UserRepository();
+
+                        repository.registerCitizen(
+                                name,
+                                email,
+                                phone,
+                                address,
+                                passwordForWorker
+                        );
+
+                        return null;
+
+                    } finally {
+
+                        Arrays.fill(passwordForWorker, '\0');
+                    }
+                }
+
+                @Override
+                protected void done() {
+
+                    registrationInProgress = false;
+
+                    createAccountButton.setEnabled(true);
+                    createAccountButton.setText("Create Account");
+
+                    try {
+
+                        get();
+
+                        JOptionPane.showMessageDialog(
+                                RegisterFrame.this,
+                                "Your account has been created successfully!\n"
+                                + "You can now sign in.",
+                                "Registration Successful",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+
+                        passwordField.setText("");
+                        confirmPasswordField.setText("");
+
+                        returnToLogin();
+
+                    } catch (InterruptedException e) {
+
+                        Thread.currentThread().interrupt();
+
+                        showWarning(
+                                "Registration was interrupted. Please try again."
+                        );
+
+                    } catch (ExecutionException e) {
+
+                        Throwable cause = e.getCause();
+
+                        if (cause instanceof UserRepository.DuplicateEmailException) {
+
+                            showWarning(
+                                    "An account with this email already exists."
+                            );
+
+                            emailField.requestFocusInWindow();
+
+                        } else {
+
+                            JOptionPane.showMessageDialog(
+                                    RegisterFrame.this,
+                                    "Registration could not be completed.\n"
+                                    + "Please check your internet connection "
+                                    + "and database configuration.",
+                                    "Registration Failed",
+                                    JOptionPane.ERROR_MESSAGE
+                            );
+
+                            System.err.println(
+                                    "Registration error type: "
+                                    + cause.getClass().getSimpleName()
+                            );
+                        }
+                    }
+                }
+            };
+
+            worker.execute();
 
         } finally {
 
