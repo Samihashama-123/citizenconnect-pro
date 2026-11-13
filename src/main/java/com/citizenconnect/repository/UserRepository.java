@@ -1,11 +1,13 @@
-
 package com.citizenconnect.repository;
 
 import com.citizenconnect.config.MongoDBConnection;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import javax.crypto.SecretKeyFactory;
@@ -64,8 +66,8 @@ public class UserRepository {
 
         if (email == null || email.isBlank()
                 || !email.trim().matches(
-                        "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-                )) {
+                "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        )) {
 
             throw new IllegalArgumentException(
                     "Please provide a valid email address."
@@ -205,7 +207,6 @@ public class UserRepository {
             String role
     ) {
 
-        // Backward-compatible constructor
         public AuthenticatedUser(
                 String fullName,
                 String email,
@@ -214,7 +215,6 @@ public class UserRepository {
             this(null, fullName, email, role);
         }
 
-        // Alternative readable user ID accessor
         public String userId() {
             return id;
         }
@@ -303,7 +303,6 @@ public class UserRepository {
 
         } catch (IllegalArgumentException e) {
 
-            // Invalid Base64 credentials
             return null;
 
         } finally {
@@ -325,22 +324,13 @@ public class UserRepository {
             }
         }
 
-        // =====================================
-        // ACCOUNT STATUS CHECK
-        // =====================================
-
         String accountStatus = user.getString("accountStatus");
 
-        // Older accounts without accountStatus remain ACTIVE.
         if (accountStatus != null
                 && !accountStatus.equalsIgnoreCase("ACTIVE")) {
 
             return null;
         }
-
-        // =====================================
-        // ROLE CHECK
-        // =====================================
 
         String role = user.getString("role");
 
@@ -349,10 +339,6 @@ public class UserRepository {
 
             return null;
         }
-
-        // =====================================
-        // RETURN AUTHENTICATED USER
-        // =====================================
 
         ObjectId userObjectId = user.getObjectId("_id");
 
@@ -366,5 +352,165 @@ public class UserRepository {
                 user.getString("email"),
                 role
         );
+    }
+
+    // =========================================
+    // GET CITIZEN PROFILE
+    // =========================================
+
+    public Document getCitizenProfile(String userId) {
+
+        if (userId == null || !ObjectId.isValid(userId)) {
+            throw new IllegalArgumentException(
+                    "Invalid user ID."
+            );
+        }
+
+        return getUsersCollection()
+                .find(
+                        Filters.and(
+                                Filters.eq("_id", new ObjectId(userId)),
+                                Filters.eq("role", "CITIZEN")
+                        )
+                )
+                .projection(
+                        Projections.exclude(
+                                "passwordHash",
+                                "passwordSalt",
+                                "passwordIterations"
+                        )
+                )
+                .first();
+    }
+
+    // =========================================
+    // UPDATE CITIZEN PROFILE
+    // =========================================
+
+    public void updateCitizenProfile(
+            String userId,
+            Document profileData
+    ) {
+
+        if (userId == null || !ObjectId.isValid(userId)) {
+            throw new IllegalArgumentException(
+                    "Invalid user ID."
+            );
+        }
+
+        if (profileData == null) {
+            throw new IllegalArgumentException(
+                    "Profile information is required."
+            );
+        }
+
+        String[] requiredFields = {
+                "fullName",
+                "phone",
+                "dateOfBirth",
+                "gender",
+                "division",
+                "district",
+                "upazila",
+                "detailedAddress",
+                "preferredLanguage"
+        };
+
+        for (String field : requiredFields) {
+
+            String value = profileData.getString(field);
+
+            if (value == null || value.isBlank()) {
+                throw new IllegalArgumentException(
+                        field + " is required."
+                );
+            }
+        }
+
+        String fullName = profileData.getString("fullName").trim();
+        String phone = profileData.getString("phone").trim();
+        String detailedAddress =
+                profileData.getString("detailedAddress").trim();
+
+        String fullAddress = String.join(", ",
+                detailedAddress,
+                safeValue(profileData.getString("localArea")),
+                safeValue(profileData.getString("upazila")),
+                safeValue(profileData.getString("district")),
+                safeValue(profileData.getString("division"))
+        );
+
+        Document updateData = new Document()
+                .append("fullName", fullName)
+                .append("phone", phone)
+                .append("alternativePhone",
+                        safeValue(profileData.getString("alternativePhone")))
+                .append("dateOfBirth",
+                        profileData.getString("dateOfBirth").trim())
+                .append("gender",
+                        profileData.getString("gender").trim())
+                .append("division",
+                        profileData.getString("division").trim())
+                .append("district",
+                        profileData.getString("district").trim())
+                .append("upazila",
+                        profileData.getString("upazila").trim())
+                .append("localArea",
+                        safeValue(profileData.getString("localArea")))
+                .append("wardNumber",
+                        safeValue(profileData.getString("wardNumber")))
+                .append("detailedAddress", detailedAddress)
+                .append("postalCode",
+                        safeValue(profileData.getString("postalCode")))
+                .append("nidNumber",
+                        safeValue(profileData.getString("nidNumber")))
+                .append("emergencyContactName",
+                        safeValue(profileData.getString("emergencyContactName")))
+                .append("emergencyContactNumber",
+                        safeValue(profileData.getString("emergencyContactNumber")))
+                .append("preferredLanguage",
+                        profileData.getString("preferredLanguage").trim())
+                .append("address", fullAddress)
+                .append("updatedAt", new Date());
+
+        Bson update = Updates.combine(
+                Updates.set("fullName", updateData.getString("fullName")),
+                Updates.set("phone", updateData.getString("phone")),
+                Updates.set("alternativePhone", updateData.getString("alternativePhone")),
+                Updates.set("dateOfBirth", updateData.getString("dateOfBirth")),
+                Updates.set("gender", updateData.getString("gender")),
+                Updates.set("division", updateData.getString("division")),
+                Updates.set("district", updateData.getString("district")),
+                Updates.set("upazila", updateData.getString("upazila")),
+                Updates.set("localArea", updateData.getString("localArea")),
+                Updates.set("wardNumber", updateData.getString("wardNumber")),
+                Updates.set("detailedAddress", updateData.getString("detailedAddress")),
+                Updates.set("postalCode", updateData.getString("postalCode")),
+                Updates.set("nidNumber", updateData.getString("nidNumber")),
+                Updates.set("emergencyContactName", updateData.getString("emergencyContactName")),
+                Updates.set("emergencyContactNumber", updateData.getString("emergencyContactNumber")),
+                Updates.set("preferredLanguage", updateData.getString("preferredLanguage")),
+                Updates.set("address", updateData.getString("address")),
+                Updates.set("updatedAt", new Date())
+        );
+
+        var result = getUsersCollection().updateOne(
+                Filters.and(
+                        Filters.eq("_id", new ObjectId(userId)),
+                        Filters.eq("role", "CITIZEN")
+                ),
+                update
+        );
+
+        if (result.getMatchedCount() != 1) {
+            throw new IllegalStateException(
+                    "Citizen profile could not be found."
+            );
+        }
+    }
+
+    private String safeValue(String value) {
+
+        return value == null ? "" : value.trim();
     }
 }
