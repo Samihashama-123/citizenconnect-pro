@@ -1,4 +1,3 @@
-
 package com.citizenconnect.ui.admin;
 
 import com.citizenconnect.config.UserSession;
@@ -150,9 +149,37 @@ public class AdminServicesFrame extends JFrame {
             button.setBorder(new EmptyBorder(12, 14, 12, 10));
             button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
             button.setAlignmentX(Component.LEFT_ALIGNMENT);
+            button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-            if (item.equals("Dashboard")) {
-                button.addActionListener(e -> openDashboard());
+            // Connect every sidebar button.
+            switch (item) {
+
+                case "Dashboard" ->
+                        button.addActionListener(e -> openDashboard());
+
+                case "Manage Users" ->
+                        button.addActionListener(e -> openManageUsers());
+
+                case "Manage Services" ->
+                        button.addActionListener(e -> loadServices());
+
+                case "Manage Applications" ->
+                        button.addActionListener(e -> openManageApplications());
+
+                case "Manage Complaints" ->
+                        button.addActionListener(e -> openManageComplaints());
+
+                case "Important Information" ->
+                        button.addActionListener(e -> openImportantInformation());
+
+                case "Emergency Alerts" ->
+                        button.addActionListener(e -> openEmergencyAlerts());
+
+                case "Volunteers & Feedback" ->
+                        button.addActionListener(e -> openVolunteersFeedback());
+
+                default -> {
+                }
             }
 
             sidebar.add(button);
@@ -176,6 +203,96 @@ public class AdminServicesFrame extends JFrame {
         sidebar.add(roleLabel);
 
         return sidebar;
+    }
+
+    // ================= ADMIN PAGE NAVIGATION =================
+
+    private void openManageUsers() {
+
+        if (!UserSession.isAdmin()) {
+            showMessage("Admin access required.", "Access Denied",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        AdminUsersFrame frame = new AdminUsersFrame(dashboardFrame);
+        frame.setVisible(true);
+        dispose();
+    }
+
+    private void openManageApplications() {
+
+        if (!UserSession.isAdmin()) {
+            showMessage("Admin access required.", "Access Denied",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        AdminApplicationsFrame frame =
+                new AdminApplicationsFrame(dashboardFrame);
+
+        frame.setVisible(true);
+        dispose();
+    }
+
+    private void openManageComplaints() {
+
+        if (!UserSession.isAdmin()) {
+            showMessage("Admin access required.", "Access Denied",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        AdminComplaintsFrame frame =
+                new AdminComplaintsFrame(dashboardFrame);
+
+        frame.setVisible(true);
+        dispose();
+    }
+
+    private void openImportantInformation() {
+
+        if (!UserSession.isAdmin()) {
+            showMessage("Admin access required.", "Access Denied",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        AdminImportantInformationFrame frame =
+                new AdminImportantInformationFrame(dashboardFrame);
+
+        frame.setVisible(true);
+        dispose();
+    }
+
+    private void openEmergencyAlerts() {
+
+        if (!UserSession.isAdmin()) {
+            showMessage("Admin access required.", "Access Denied",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        AdminEmergencyAlertsFrame frame =
+                new AdminEmergencyAlertsFrame(dashboardFrame);
+
+        frame.setVisible(true);
+        dispose();
+    }
+
+    private void openVolunteersFeedback() {
+
+        if (!UserSession.isAdmin()) {
+            showMessage("Admin access required.", "Access Denied",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        AdminVolunteersFeedbackFrame frame =
+                new AdminVolunteersFeedbackFrame(dashboardFrame);
+
+        frame.setVisible(true);
+        dispose();
     }
 
     // ================= MAIN CONTENT =================
@@ -1217,7 +1334,6 @@ public class AdminServicesFrame extends JFrame {
 
     // ================= HELPERS =================
 
-    // For displaying values in the table.
     private String getText(Document document, String field) {
 
         Object value = document.get(field);
@@ -1229,8 +1345,6 @@ public class AdminServicesFrame extends JFrame {
         return value.toString();
     }
 
-    // For loading values into editable form fields.
-    // Missing values should be empty, not "-".
     private String getFormText(Document document, String field) {
 
         Object value = document.get(field);

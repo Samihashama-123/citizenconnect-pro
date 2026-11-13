@@ -1,4 +1,3 @@
-
 package com.citizenconnect.ui.admin;
 
 import com.citizenconnect.config.UserSession;
@@ -95,8 +94,6 @@ public class AdminUsersFrame extends JFrame {
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setBorder(new EmptyBorder(25, 20, 25, 20));
 
-        // BACK TO DASHBOARD BUTTON
-
         JButton backButton = new JButton("←  Back to Dashboard");
 
         backButton.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -125,8 +122,6 @@ public class AdminUsersFrame extends JFrame {
 
         sidebar.add(backButton);
         sidebar.add(Box.createVerticalStrut(20));
-
-        // LOGO
 
         JLabel logo = new JLabel("CitizenConnect Pro");
         logo.setFont(new Font("Segoe UI", Font.BOLD, 19));
@@ -186,8 +181,77 @@ public class AdminUsersFrame extends JFrame {
 
             button.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+            // Dashboard navigation
             if (item.equals("Dashboard")) {
+
                 button.addActionListener(e -> openDashboard());
+
+            }
+
+            // Manage Services navigation
+            else if (item.equals("Manage Services")) {
+
+                button.addActionListener(e ->
+                        openAdminScreen(
+                                () -> new AdminServicesFrame(dashboardFrame)
+                        )
+                );
+
+            }
+
+            // Manage Applications navigation
+            else if (item.equals("Manage Applications")) {
+
+                button.addActionListener(e ->
+                        openAdminScreen(
+                                () -> new AdminApplicationsFrame(dashboardFrame)
+                        )
+                );
+
+            }
+
+            // Manage Complaints navigation
+            else if (item.equals("Manage Complaints")) {
+
+                button.addActionListener(e ->
+                        openAdminScreen(
+                                () -> new AdminComplaintsFrame(dashboardFrame)
+                        )
+                );
+
+            }
+
+            // Important Information navigation
+            else if (item.equals("Important Information")) {
+
+                button.addActionListener(e ->
+                        openAdminScreen(
+                                () -> new AdminImportantInformationFrame(dashboardFrame)
+                        )
+                );
+
+            }
+
+            // Emergency Alerts navigation
+            else if (item.equals("Emergency Alerts")) {
+
+                button.addActionListener(e ->
+                        openAdminScreen(
+                                () -> new AdminEmergencyAlertsFrame(dashboardFrame)
+                        )
+                );
+
+            }
+
+            // Volunteers & Feedback navigation
+            else if (item.equals("Volunteers & Feedback")) {
+
+                button.addActionListener(e ->
+                        openAdminScreen(
+                                () -> new AdminVolunteersFeedbackFrame(dashboardFrame)
+                        )
+                );
+
             }
 
             sidebar.add(button);
@@ -216,6 +280,49 @@ public class AdminUsersFrame extends JFrame {
         return sidebar;
     }
 
+    // ================= ADMIN SCREEN NAVIGATION =================
+
+    @FunctionalInterface
+    private interface AdminScreenFactory {
+        JFrame create();
+    }
+
+    private void openAdminScreen(AdminScreenFactory factory) {
+
+        if (!UserSession.isAdmin()) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Admin access required.",
+                    "Access Denied",
+                    JOptionPane.ERROR_MESSAGE
+            );
+
+            return;
+        }
+
+        try {
+
+            JFrame frame = factory.create();
+
+            frame.setVisible(true);
+
+            dispose();
+
+        } catch (Exception ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Unable to open the selected admin screen.\n"
+                            + ex.getMessage(),
+                    "Navigation Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+
+            ex.printStackTrace();
+        }
+    }
+
     // ================= DASHBOARD NAVIGATION =================
 
     private void openDashboard() {
@@ -232,8 +339,6 @@ public class AdminUsersFrame extends JFrame {
             return;
         }
 
-        // Restore original Dashboard window
-
         if (dashboardFrame != null && dashboardFrame.isDisplayable()) {
 
             dashboardFrame.setExtendedState(JFrame.NORMAL);
@@ -242,8 +347,6 @@ public class AdminUsersFrame extends JFrame {
             dashboardFrame.requestFocus();
 
         } else {
-
-            // Fallback when Manage Users was opened independently
 
             AdminDashboardFrame newDashboard =
                     new AdminDashboardFrame();
@@ -443,6 +546,7 @@ public class AdminUsersFrame extends JFrame {
     }
 
     private void performSearch() {
+
         loadUsers(searchField.getText().trim());
     }
 

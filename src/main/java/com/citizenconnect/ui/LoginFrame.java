@@ -7,6 +7,7 @@ import com.citizenconnect.theme.RoundedButton;
 import com.citizenconnect.theme.RoundedTextField;
 import com.citizenconnect.theme.RoundedPasswordField;
 import com.citizenconnect.config.UserSession;
+import com.citizenconnect.ui.admin.AdminDashboardFrame;
 
 import javax.swing.*;
 import java.awt.*;
@@ -877,17 +878,15 @@ public class LoginFrame extends JFrame {
 
                         case "ADMIN" -> {
 
-                                JOptionPane.showMessageDialog(
-                                                this,
-                                                "Login Successful!\n\n"
-                                                                + "Welcome, " + user.fullName() + "!\n"
-                                                                + "Account Role: ADMIN\n"
-                                                                + "User ID: " + user.id() + "\n\n"
-                                                                + "Admin Dashboard integration is pending.",
-                                                "Admin Authentication",
-                                                JOptionPane.INFORMATION_MESSAGE);
-                        }
+    // Open Admin Dashboard
+    AdminDashboardFrame dashboard =
+            new AdminDashboardFrame();
 
+    dashboard.setVisible(true);
+
+    // Close Login window
+    dispose();
+}
                         default -> {
 
                                 UserSession.clearSession();

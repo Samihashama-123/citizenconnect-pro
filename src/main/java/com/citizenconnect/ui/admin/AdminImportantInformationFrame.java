@@ -1,4 +1,3 @@
-
 package com.citizenconnect.ui.admin;
 
 import com.citizenconnect.config.UserSession;
@@ -153,8 +152,9 @@ public class AdminImportantInformationFrame extends JFrame {
                     Cursor.HAND_CURSOR
             ));
 
-            if (item.equals("Dashboard")) {
-                button.addActionListener(e -> openDashboard());
+            // Navigation for all other admin pages.
+            if (!item.equals("Important Information")) {
+                button.addActionListener(e -> navigateToPage(item));
             }
 
             sidebar.add(button);
@@ -298,7 +298,7 @@ public class AdminImportantInformationFrame extends JFrame {
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Theme.BORDER),
                 new EmptyBorder(18, 18, 18, 18)
-        ));
+                        ));
 
         JPanel filters = new JPanel(
                 new FlowLayout(FlowLayout.LEFT, 8, 0)
@@ -726,8 +726,7 @@ public class AdminImportantInformationFrame extends JFrame {
                 }
         );
     }
-
-    // =====================================================
+        // =====================================================
     // INFORMATION FORM
     // =====================================================
 
@@ -1006,6 +1005,62 @@ public class AdminImportantInformationFrame extends JFrame {
     }
 
     // =====================================================
+    // NAVIGATION BETWEEN ADMIN PAGES
+    // =====================================================
+
+    private void navigateToPage(String page) {
+
+        if (!UserSession.isAdmin()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Admin access required.",
+                    "Access Denied",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        if ("Dashboard".equals(page)) {
+            openDashboard();
+            return;
+        }
+
+        JFrame targetFrame;
+
+        switch (page) {
+            case "Manage Users":
+                targetFrame = new AdminUsersFrame(dashboardFrame);
+                break;
+
+            case "Manage Services":
+                targetFrame = new AdminServicesFrame(dashboardFrame);
+                break;
+
+            case "Manage Applications":
+                targetFrame = new AdminApplicationsFrame(dashboardFrame);
+                break;
+
+            case "Manage Complaints":
+                targetFrame = new AdminComplaintsFrame(dashboardFrame);
+                break;
+
+            case "Emergency Alerts":
+                targetFrame = new AdminEmergencyAlertsFrame(dashboardFrame);
+                break;
+
+            case "Volunteers & Feedback":
+                targetFrame = new AdminVolunteersFeedbackFrame(dashboardFrame);
+                break;
+
+            default:
+                return;
+        }
+
+        targetFrame.setVisible(true);
+        dispose();
+    }
+
+    // =====================================================
     // BACK TO DASHBOARD
     // =====================================================
 
@@ -1032,8 +1087,7 @@ public class AdminImportantInformationFrame extends JFrame {
 
         dispose();
     }
-
-    // =====================================================
+        // =====================================================
     // DATABASE TASK
     // =====================================================
 

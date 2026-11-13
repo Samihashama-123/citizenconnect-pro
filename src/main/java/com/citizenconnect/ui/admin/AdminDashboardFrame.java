@@ -160,6 +160,7 @@ public class AdminDashboardFrame extends JFrame {
             sidebar.add(Box.createVerticalStrut(7));
         }
 
+        // Push Administrator and Logout to the bottom.
         sidebar.add(Box.createVerticalGlue());
 
         JSeparator separator = new JSeparator();
@@ -175,8 +176,79 @@ public class AdminDashboardFrame extends JFrame {
         roleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         sidebar.add(roleLabel);
+        sidebar.add(Box.createVerticalStrut(12));
+
+        // ================= LOGOUT BUTTON =================
+
+        JButton logoutButton = new JButton("Sign Out");
+
+        logoutButton.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        logoutButton.setForeground(Color.WHITE);
+        logoutButton.setBackground(new Color(38, 65, 96));
+        logoutButton.setHorizontalAlignment(SwingConstants.LEFT);
+        logoutButton.setFocusPainted(false);
+        logoutButton.setBorderPainted(false);
+        logoutButton.setOpaque(true);
+        logoutButton.setCursor(
+                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        );
+
+        logoutButton.setBorder(new EmptyBorder(12, 14, 12, 10));
+        logoutButton.setMaximumSize(
+                new Dimension(Integer.MAX_VALUE, 44)
+        );
+        logoutButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        logoutButton.addActionListener(e -> logout());
+
+        sidebar.add(logoutButton);
 
         return sidebar;
+    }
+
+    // ================= LOGOUT =================
+
+    private void logout() {
+
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to sign out?",
+                "Confirm Sign Out",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (choice != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // Clear the current admin session.
+        UserSession.clearSession();
+
+        // Close the Admin Dashboard.
+        dispose();
+
+        // Open Login Frame.
+        try {
+
+            Class<?> loginClass =
+                    Class.forName("com.citizenconnect.ui.LoginFrame");
+
+            JFrame loginFrame = (JFrame)
+                    loginClass.getDeclaredConstructor().newInstance();
+
+            loginFrame.setLocationRelativeTo(null);
+            loginFrame.setVisible(true);
+
+        } catch (Exception ex) {
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Unable to open Login page:\n" + ex.getMessage(),
+                    "Login Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     // ================= MANAGE USERS NAVIGATION =================

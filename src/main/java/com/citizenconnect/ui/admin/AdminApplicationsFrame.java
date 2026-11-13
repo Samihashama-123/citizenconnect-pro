@@ -1,4 +1,3 @@
-
 package com.citizenconnect.ui.admin;
 
 import com.citizenconnect.config.UserSession;
@@ -157,8 +156,9 @@ public class AdminApplicationsFrame extends JFrame {
             button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
             button.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            if (item.equals("Dashboard")) {
-                button.addActionListener(e -> openDashboard());
+            // Connect every other Admin page to navigation.
+            if (!item.equals("Manage Applications")) {
+                button.addActionListener(e -> navigateToPage(item));
             }
 
             sidebar.add(button);
@@ -975,6 +975,60 @@ public class AdminApplicationsFrame extends JFrame {
         worker.execute();
     }
 
+    // ================= ADMIN PAGE NAVIGATION =================
+
+    private void navigateToPage(String page) {
+
+        if (!UserSession.isAdmin()) {
+            showMessage(
+                    "Admin access required.",
+                    "Access Denied",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        if ("Dashboard".equals(page)) {
+            openDashboard();
+            return;
+        }
+
+        JFrame targetFrame;
+
+        switch (page) {
+
+            case "Manage Users":
+                targetFrame = new AdminUsersFrame(dashboardFrame);
+                break;
+
+            case "Manage Services":
+                targetFrame = new AdminServicesFrame(dashboardFrame);
+                break;
+
+            case "Manage Complaints":
+                targetFrame = new AdminComplaintsFrame(dashboardFrame);
+                break;
+
+            case "Important Information":
+                targetFrame = new AdminImportantInformationFrame(dashboardFrame);
+                break;
+
+            case "Emergency Alerts":
+                targetFrame = new AdminEmergencyAlertsFrame(dashboardFrame);
+                break;
+
+            case "Volunteers & Feedback":
+                targetFrame = new AdminVolunteersFeedbackFrame(dashboardFrame);
+                break;
+
+            default:
+                return;
+        }
+
+        targetFrame.setVisible(true);
+        dispose();
+    }
+
     // ================= BACK TO DASHBOARD =================
 
     private void openDashboard() {
@@ -1089,4 +1143,3 @@ public class AdminApplicationsFrame extends JFrame {
         );
     }
 }
-

@@ -1,4 +1,3 @@
-
 package com.citizenconnect.ui.admin;
 
 import com.citizenconnect.config.UserSession;
@@ -8,7 +7,6 @@ import com.citizenconnect.theme.RoundedPanel;
 import com.citizenconnect.theme.RoundedButton;
 
 import org.bson.Document;
-
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -148,8 +146,8 @@ public class AdminComplaintsFrame extends JFrame {
             button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
             button.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            if (item.equals("Dashboard")) {
-                button.addActionListener(e -> openDashboard());
+            if (!item.equals("Manage Complaints")) {
+                button.addActionListener(e -> navigateToPage(item));
             }
 
             sidebar.add(button);
@@ -296,8 +294,7 @@ public class AdminComplaintsFrame extends JFrame {
 
         return card;
     }
-
-    // ================= TABLE PANEL =================
+        // ================= TABLE PANEL =================
 
     private JPanel createTablePanel() {
 
@@ -643,8 +640,7 @@ public class AdminComplaintsFrame extends JFrame {
 
         return null;
     }
-
-    // ================= VIEW DETAILS =================
+        // ================= VIEW DETAILS =================
 
     private void viewSelectedComplaint() {
 
@@ -948,6 +944,59 @@ public class AdminComplaintsFrame extends JFrame {
         };
 
         worker.execute();
+    }
+        // ================= ADMIN PAGE NAVIGATION =================
+
+    private void navigateToPage(String page) {
+
+        if (!UserSession.isAdmin()) {
+            showMessage(
+                    "Admin access required.",
+                    "Access Denied",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        if ("Dashboard".equals(page)) {
+            openDashboard();
+            return;
+        }
+
+        JFrame targetFrame;
+
+        switch (page) {
+
+            case "Manage Users":
+                targetFrame = new AdminUsersFrame(dashboardFrame);
+                break;
+
+            case "Manage Services":
+                targetFrame = new AdminServicesFrame(dashboardFrame);
+                break;
+
+            case "Manage Applications":
+                targetFrame = new AdminApplicationsFrame(dashboardFrame);
+                break;
+
+            case "Important Information":
+                targetFrame = new AdminImportantInformationFrame(dashboardFrame);
+                break;
+
+            case "Emergency Alerts":
+                targetFrame = new AdminEmergencyAlertsFrame(dashboardFrame);
+                break;
+
+            case "Volunteers & Feedback":
+                targetFrame = new AdminVolunteersFeedbackFrame(dashboardFrame);
+                break;
+
+            default:
+                return;
+        }
+
+        targetFrame.setVisible(true);
+        dispose();
     }
 
     // ================= DASHBOARD NAVIGATION =================

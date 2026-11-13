@@ -1,4 +1,3 @@
-
 package com.citizenconnect.ui.admin;
 
 import com.citizenconnect.config.UserSession;
@@ -167,17 +166,8 @@ public class AdminEmergencyAlertsFrame extends JFrame {
             button.setOpaque(true);
             button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-            if (item.equals("Dashboard")) {
-                button.addActionListener(e -> openDashboard());
-            } else if (!item.equals("Emergency Alerts")) {
-                button.addActionListener(e ->
-                        JOptionPane.showMessageDialog(
-                                this,
-                                "This page is not connected yet.",
-                                "Navigation",
-                                JOptionPane.INFORMATION_MESSAGE
-                        )
-                );
+            if (!item.equals("Emergency Alerts")) {
+                button.addActionListener(e -> navigateToPage(item));
             }
 
             sidebar.add(button);
@@ -453,7 +443,7 @@ public class AdminEmergencyAlertsFrame extends JFrame {
 
         return panel;
     }
-
+           
     private void styleCombo(JComboBox<String> combo) {
 
         combo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -627,8 +617,7 @@ public class AdminEmergencyAlertsFrame extends JFrame {
         }
 
         tableModel.setRowCount(0);
-
-        String search = searchField.getText()
+                String search = searchField.getText()
                 .trim()
                 .toLowerCase(Locale.ROOT);
 
@@ -942,8 +931,7 @@ public class AdminEmergencyAlertsFrame extends JFrame {
             return;
         }
     }
-
-    private void addFormRow(
+        private void addFormRow(
             JPanel panel,
             GridBagConstraints gbc,
             int row,
@@ -1154,6 +1142,60 @@ public class AdminEmergencyAlertsFrame extends JFrame {
                 "Operation Failed",
                 JOptionPane.ERROR_MESSAGE
         );
+    }
+
+    // ================= NAVIGATION BETWEEN ADMIN PAGES =================
+
+    private void navigateToPage(String page) {
+
+        if (!UserSession.isAdmin()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Admin access required.",
+                    "Access Denied",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        if ("Dashboard".equals(page)) {
+            openDashboard();
+            return;
+        }
+
+        JFrame targetFrame;
+
+        switch (page) {
+            case "Manage Users":
+                targetFrame = new AdminUsersFrame(dashboardFrame);
+                break;
+
+            case "Manage Services":
+                targetFrame = new AdminServicesFrame(dashboardFrame);
+                break;
+
+            case "Manage Applications":
+                targetFrame = new AdminApplicationsFrame(dashboardFrame);
+                break;
+
+            case "Manage Complaints":
+                targetFrame = new AdminComplaintsFrame(dashboardFrame);
+                break;
+
+            case "Important Information":
+                targetFrame = new AdminImportantInformationFrame(dashboardFrame);
+                break;
+
+            case "Volunteers & Feedback":
+                targetFrame = new AdminVolunteersFeedbackFrame(dashboardFrame);
+                break;
+
+            default:
+                return;
+        }
+
+        targetFrame.setVisible(true);
+        dispose();
     }
 
     // ================= BACK TO DASHBOARD =================
