@@ -1,3 +1,4 @@
+
 package com.citizenconnect;
 
 import com.citizenconnect.config.MongoDBConnection;
@@ -18,6 +19,8 @@ public class App {
 
             // Initialize database collections and indexes
             DatabaseInitializer.initialize();
+
+            System.out.println("Application is starting...");
 
             // Close MongoDB connection when application exits
             Runtime.getRuntime().addShutdownHook(

@@ -11,6 +11,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +50,7 @@ public class PublicServicesFrame extends JFrame {
         currentUser = user;
 
         setTitle("CitizenConnect Pro - Public Services");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 700));
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
@@ -165,13 +167,38 @@ public class PublicServicesFrame extends JFrame {
                     break;
 
                 case "Public Services":
+                    // Already on the Public Services screen.
+                    break;
+
+                case "My Applications":
+                    goToMyApplications();
+                    break;
+
+                case "My Complaints":
+                    goToMyComplaints();
+                    break;
+
+                case "Important Information":
+                    goToImportantInformation();
+                    break;
+
+                case "Emergency Alerts":
+                    goToEmergencyAlerts();
+                    break;
+
+                case "Volunteer Registration":
+                    goToVolunteerRegistration();
+                    break;
+
+                case "Feedback & Rating":
+                    goToFeedbackRating();
                     break;
 
                 default:
                     JOptionPane.showMessageDialog(
                             this,
-                            title + " screen will be connected later.",
-                            "Screen Integration",
+                            title + " screen is not available.",
+                            "Navigation",
                             JOptionPane.INFORMATION_MESSAGE
                     );
             }
@@ -246,7 +273,7 @@ public class PublicServicesFrame extends JFrame {
     }
 
     // =========================================
-    // MAIN CONTENT
+    // MAIN CONTENT WITH SCROLLING
     // =========================================
 
     private JPanel createMainContent() {
@@ -254,11 +281,10 @@ public class PublicServicesFrame extends JFrame {
         JPanel outer = new JPanel(new BorderLayout());
         outer.setBackground(BG);
 
-        JPanel content = new JPanel();
+        JPanel content = new ScrollablePanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBackground(BG);
         content.setBorder(new EmptyBorder(27, 30, 35, 30));
-        content.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         content.add(createTopBar());
         content.add(Box.createVerticalStrut(22));
@@ -280,34 +306,20 @@ public class PublicServicesFrame extends JFrame {
 
         content.add(servicesPanel);
 
-        mainScroll = new JScrollPane(content);
+        mainScroll = new JScrollPane(
+                content,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
+
         mainScroll.setBorder(null);
         mainScroll.setBackground(BG);
         mainScroll.getViewport().setBackground(BG);
+
         mainScroll.setWheelScrollingEnabled(true);
+
         mainScroll.getVerticalScrollBar().setUnitIncrement(24);
-        mainScroll.setHorizontalScrollBarPolicy(
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-        // Ensure the content always uses the viewport width.
-        mainScroll.getViewport().addComponentListener(
-                new java.awt.event.ComponentAdapter() {
-
-                    @Override
-                    public void componentResized(
-                            java.awt.event.ComponentEvent e) {
-
-                        int width = mainScroll.getViewport().getWidth();
-
-                        if (width > 0) {
-                            content.setPreferredSize(
-                                    new Dimension(width, content.getPreferredSize().height));
-
-                            content.revalidate();
-                        }
-                    }
-                }
-        );
+        mainScroll.getVerticalScrollBar().setBlockIncrement(100);
 
         outer.add(mainScroll, BorderLayout.CENTER);
 
@@ -790,8 +802,10 @@ public class PublicServicesFrame extends JFrame {
             return;
         }
 
-        new ServiceDetailsFrame(currentUser, service).setVisible(true);
-        dispose();
+        ServiceDetailsFrame detailsFrame =
+                new ServiceDetailsFrame(currentUser, service);
+
+        openChildFrame(detailsFrame);
     }
 
     // =========================================
@@ -972,16 +986,66 @@ public class PublicServicesFrame extends JFrame {
     // NAVIGATION
     // =========================================
 
-    private void goToDashboard() {
+    /**
+     * Opens another citizen screen without destroying this Public Services
+     * window. When the child window is closed, Public Services becomes visible
+     * again.
+     */
+    private void openChildFrame(JFrame childFrame) {
 
-        new CitizenDashboardFrame(currentUser).setVisible(true);
-        dispose();
+        if (childFrame == null) {
+            return;
+        }
+
+        childFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        childFrame.addWindowListener(new WindowAdapter() {
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+
+                if (UserSession.isLoggedIn()) {
+                    setVisible(true);
+                    toFront();
+                    requestFocus();
+                }
+            }
+        });
+
+        setVisible(false);
+        childFrame.setVisible(true);
+    }
+
+    private void goToDashboard() {
+        openChildFrame(new CitizenDashboardFrame(currentUser));
     }
 
     private void goToProfile() {
+        openChildFrame(new UserProfileFrame(currentUser));
+    }
 
-        new UserProfileFrame(currentUser).setVisible(true);
-        dispose();
+    private void goToMyApplications() {
+        openChildFrame(new MyApplicationsFrame());
+    }
+
+    private void goToMyComplaints() {
+        openChildFrame(new MyComplaintsFrame());
+    }
+
+    private void goToImportantInformation() {
+        openChildFrame(new ImportantInformationFrame());
+    }
+
+    private void goToEmergencyAlerts() {
+        openChildFrame(new EmergencyAlertsFrame());
+    }
+
+    private void goToVolunteerRegistration() {
+        openChildFrame(new VolunteerRegistrationFrame());
+    }
+
+    private void goToFeedbackRating() {
+        openChildFrame(new FeedbackRatingFrame());
     }
 
     private void logout() {
@@ -998,6 +1062,47 @@ public class PublicServicesFrame extends JFrame {
 
             new LoginFrame().setVisible(true);
             dispose();
+        }
+    }
+
+    // =========================================
+    // SCROLLABLE CONTENT PANEL
+    // =========================================
+
+    private static class ScrollablePanel extends JPanel
+            implements Scrollable {
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(
+                Rectangle visibleRect,
+                int orientation,
+                int direction) {
+
+            return 24;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(
+                Rectangle visibleRect,
+                int orientation,
+                int direction) {
+
+            return 100;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
         }
     }
 

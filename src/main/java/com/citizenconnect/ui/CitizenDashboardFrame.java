@@ -49,7 +49,6 @@ public class CitizenDashboardFrame extends JFrame {
     private JButton refreshButton;
     private boolean loading;
 
-    // Profile completion components
     private JLabel profileCompletionLabel;
     private JProgressBar profileCompletionBar;
     private JLabel profileCompletionMessage;
@@ -119,11 +118,12 @@ public class CitizenDashboardFrame extends JFrame {
         addNav(menu, "01", "My Profile", false);
         addNav(menu, "02", "Public Services", false);
         addNav(menu, "03", "My Applications", false);
-        addNav(menu, "04", "My Complaints", false);
-        addNav(menu, "05", "Important Information", false);
-        addNav(menu, "06", "Emergency Alerts", false);
-        addNav(menu, "07", "Volunteer Registration", false);
-        addNav(menu, "08", "Feedback & Rating", false);
+        addNav(menu, "04", "Submit Complaint", false);
+        addNav(menu, "05", "My Complaints", false);
+        addNav(menu, "06", "Important Information", false);
+        addNav(menu, "07", "Emergency Alerts", false);
+        addNav(menu, "08", "Volunteer Registration", false);
+        addNav(menu, "09", "Feedback & Rating", false);
 
         sidebar.add(menu, BorderLayout.NORTH);
         sidebar.add(createSidebarFooter(), BorderLayout.SOUTH);
@@ -228,14 +228,47 @@ public class CitizenDashboardFrame extends JFrame {
 
             button.addActionListener(e -> {
 
-                if ("My Profile".equals(title)) {
-                    openProfile();
+                switch (title) {
 
-                } else if ("Public Services".equals(title)) {
-                    openPublicServices();
+                    case "My Profile":
+                        openProfile();
+                        break;
 
-                } else {
-                    showNavigationNotice(title);
+                    case "Public Services":
+                        openPublicServices();
+                        break;
+
+                    case "My Applications":
+                        openMyApplications();
+                        break;
+
+                    case "Submit Complaint":
+                        openSubmitComplaint();
+                        break;
+
+                    case "My Complaints":
+                        openMyComplaints();
+                        break;
+
+                    case "Important Information":
+                        openImportantInformation();
+                        break;
+
+                    case "Emergency Alerts":
+                        openEmergencyAlerts();
+                        break;
+
+                    case "Volunteer Registration":
+                        openVolunteerRegistration();
+                        break;
+
+                    case "Feedback & Rating":
+                        openFeedbackRating();
+                        break;
+
+                    default:
+                        showNavigationNotice(title);
+                        break;
                 }
             });
         }
@@ -274,7 +307,6 @@ public class CitizenDashboardFrame extends JFrame {
 
         addFullWidth(content, createWelcomeBanner());
 
-        // Profile completion card
         content.add(Box.createVerticalStrut(15));
         addFullWidth(content, createProfileCompletionCard());
 
@@ -461,7 +493,6 @@ public class CitizenDashboardFrame extends JFrame {
                 if (hasValue(district)) completed++;
                 if (hasValue(upazila)) completed++;
 
-                // Support the old address field as well.
                 if (hasValue(detailedAddress)
                         || hasValue(profile.getString("address"))) {
                     completed++;
@@ -855,10 +886,27 @@ public class CitizenDashboardFrame extends JFrame {
 
         action.addActionListener(e -> {
 
-            if ("Public Services".equals(title)) {
-                openPublicServices();
-            } else {
-                showNavigationNotice(title);
+            switch (title) {
+
+                case "Public Services":
+                    openPublicServices();
+                    break;
+
+                case "My Applications":
+                    openMyApplications();
+                    break;
+
+                case "My Complaints":
+                    openMyComplaints();
+                    break;
+
+                case "Emergency Alerts":
+                    openEmergencyAlerts();
+                    break;
+
+                default:
+                    showNavigationNotice(title);
+                    break;
             }
         });
 
@@ -956,7 +1004,7 @@ public class CitizenDashboardFrame extends JFrame {
                 "Explore Information");
 
         openInfo.addActionListener(
-                e -> showNavigationNotice("Important Information"));
+                e -> openImportantInformation());
 
         information.add(heading, BorderLayout.NORTH);
         information.add(description, BorderLayout.CENTER);
@@ -979,7 +1027,7 @@ public class CitizenDashboardFrame extends JFrame {
         JButton openAlerts = simpleActionButton("View All Alerts");
 
         openAlerts.addActionListener(
-                e -> showNavigationNotice("Emergency Alerts"));
+                e -> openEmergencyAlerts());
 
         alerts.add(alertHeading, BorderLayout.NORTH);
         alerts.add(alertScroll, BorderLayout.CENTER);
@@ -1536,6 +1584,38 @@ public class CitizenDashboardFrame extends JFrame {
 
     // ==================== NAVIGATION ====================
 
+    // ==================== JOTY'S CITIZEN SCREENS ====================
+
+    private void openMyApplications() {
+        new MyApplicationsFrame().setVisible(true);
+    }
+
+    private void openSubmitComplaint() {
+        new SubmitComplaintFrame().setVisible(true);
+    }
+
+    private void openMyComplaints() {
+        new MyComplaintsFrame().setVisible(true);
+    }
+
+    private void openImportantInformation() {
+        new ImportantInformationFrame().setVisible(true);
+    }
+
+    private void openEmergencyAlerts() {
+        new EmergencyAlertsFrame().setVisible(true);
+    }
+
+    private void openVolunteerRegistration() {
+        new VolunteerRegistrationFrame().setVisible(true);
+    }
+
+    private void openFeedbackRating() {
+        new FeedbackRatingFrame().setVisible(true);
+    }
+
+    // ==================== PUBLIC SERVICES ====================
+
     private void openPublicServices() {
 
         UserRepository.AuthenticatedUser user =
@@ -1552,10 +1632,15 @@ public class CitizenDashboardFrame extends JFrame {
             return;
         }
 
-        new PublicServicesFrame(user).setVisible(true);
+        PublicServicesFrame publicServicesFrame =
+                new PublicServicesFrame(user);
 
-        dispose();
+        publicServicesFrame.setVisible(true);
+
+        // Keep the dashboard open behind the Public Services window.
     }
+
+    // ==================== PROFILE ====================
 
     private void openProfile() {
 
@@ -1573,19 +1658,18 @@ public class CitizenDashboardFrame extends JFrame {
             return;
         }
 
-        new UserProfileFrame(user).setVisible(true);
+        UserProfileFrame profileFrame = new UserProfileFrame(user);
+        profileFrame.setVisible(true);
 
-        dispose();
+        // Keep the dashboard open behind the Profile window.
     }
 
     private void showNavigationNotice(String pageName) {
 
         JOptionPane.showMessageDialog(
                 this,
-                pageName
-                        + " screen will be connected when the final screen class "
-                        + "from the assigned team member is integrated.",
-                "Screen Integration",
+                pageName + " is not available from this dashboard yet.",
+                "Navigation",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
