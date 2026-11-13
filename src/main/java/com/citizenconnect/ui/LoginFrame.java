@@ -7,6 +7,7 @@ import com.citizenconnect.theme.RoundedButton;
 import com.citizenconnect.theme.RoundedTextField;
 import com.citizenconnect.theme.RoundedPasswordField;
 import com.citizenconnect.config.UserSession;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
@@ -15,12 +16,20 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
+import java.util.prefs.Preferences;
 
 public class LoginFrame extends JFrame {
 
         private static final String EMAIL_HINT = "Enter your email address";
 
         private static final String PASSWORD_HINT = "Enter your password";
+
+        // Preferences for Remember Me
+        private static final Preferences PREFS =
+                        Preferences.userNodeForPackage(LoginFrame.class);
+
+        private static final String REMEMBERED_EMAIL_KEY =
+                        "remembered_email";
 
         private RoundedTextField emailField;
         private RoundedPasswordField passwordField;
@@ -48,6 +57,9 @@ public class LoginFrame extends JFrame {
                 mainPanel.add(createLoginPanel());
 
                 setContentPane(mainPanel);
+
+                // Load previously remembered email
+                loadRememberedEmail();
         }
 
         // =========================================
@@ -364,16 +376,23 @@ public class LoginFrame extends JFrame {
                 rememberMe.setFocusPainted(false);
                 rememberMe.setSelected(false);
 
-                // Remember Me is UI-only until a secure
-                // session persistence mechanism is added.
                 rememberMe.setToolTipText(
-                                "Session persistence will be added later");
+                                "Remember your email address on this device");
+
+                // Remove saved email immediately when unchecked
+                rememberMe.addActionListener(e -> {
+
+                        if (!rememberMe.isSelected()) {
+                                PREFS.remove(REMEMBERED_EMAIL_KEY);
+                        }
+                });
 
                 JButton forgotPassword = createLinkButton("Forgot password?");
 
                 forgotPassword.addActionListener(e -> {
 
-                        ForgotPasswordFrame forgotFrame = new ForgotPasswordFrame(this);
+                        ForgotPasswordFrame forgotFrame =
+                                        new ForgotPasswordFrame(this);
 
                         forgotFrame.setVisible(true);
                         this.setVisible(false);
@@ -651,6 +670,44 @@ public class LoginFrame extends JFrame {
         }
 
         // =========================================
+        // REMEMBER ME - SAVE AND LOAD EMAIL
+        // =========================================
+
+        private void loadRememberedEmail() {
+
+                String savedEmail = PREFS.get(
+                                REMEMBERED_EMAIL_KEY, "");
+
+                if (savedEmail != null && !savedEmail.trim().isEmpty()) {
+
+                        emailField.setText(savedEmail);
+                        emailField.setForeground(Theme.TEXT);
+
+                        rememberMe.setSelected(true);
+                }
+        }
+
+        private void saveRememberedEmail() {
+
+                if (rememberMe.isSelected()) {
+
+                        String email = emailField.getText().trim();
+
+                        if (!email.isEmpty()
+                                        && !email.equals(EMAIL_HINT)) {
+
+                                PREFS.put(
+                                                REMEMBERED_EMAIL_KEY,
+                                                email);
+                }
+
+                } else {
+
+                        PREFS.remove(REMEMBERED_EMAIL_KEY);
+                }
+        }
+
+        // =========================================
         // MONGODB LOGIN AUTHENTICATION
         // =========================================
 
@@ -694,7 +751,8 @@ public class LoginFrame extends JFrame {
 
                         char[] passwordForWorker = Arrays.copyOf(password, password.length);
 
-                        SwingWorker<UserRepository.AuthenticatedUser, Void> worker = new SwingWorker<UserRepository.AuthenticatedUser, Void>() {
+                        SwingWorker<UserRepository.AuthenticatedUser, Void> worker =
+                                        new SwingWorker<UserRepository.AuthenticatedUser, Void>() {
 
                                 @Override
                                 protected UserRepository.AuthenticatedUser doInBackground()
@@ -797,6 +855,9 @@ public class LoginFrame extends JFrame {
                         return;
                 }
 
+                // Save remembered email if enabled
+                saveRememberedEmail();
+
                 // Save authenticated user information
                 UserSession.setCurrentUser(user);
 
@@ -804,15 +865,14 @@ public class LoginFrame extends JFrame {
 
                         case "CITIZEN" -> {
 
-                                JOptionPane.showMessageDialog(
-                                                this,
-                                                "Login Successful!\n\n"
-                                                                + "Welcome, " + user.fullName() + "!\n"
-                                                                + "Account Role: CITIZEN\n"
-                                                                + "User ID: " + user.id() + "\n\n"
-                                                                + "Citizen Dashboard integration is pending.",
-                                                "Citizen Authentication",
-                                                JOptionPane.INFORMATION_MESSAGE);
+                                // Open Citizen Dashboard
+                                CitizenDashboardFrame dashboard =
+                                                new CitizenDashboardFrame(user);
+
+                                dashboard.setVisible(true);
+
+                                // Close Login window
+                                dispose();
                         }
 
                         case "ADMIN" -> {
