@@ -42,7 +42,7 @@ public class ServiceDetailsFrame extends JFrame {
         this.service = service;
 
         setTitle("CitizenConnect Pro - Service Details");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 700));
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
@@ -518,9 +518,12 @@ public class ServiceDetailsFrame extends JFrame {
 
         // Open Apply For Service Page
         applyButton.addActionListener(e -> {
-            new ApplyForServiceFrame(currentUser, service).setVisible(true);
-            dispose();
-        });
+    ApplyForServiceFrame applyFrame =
+            new ApplyForServiceFrame(currentUser, service);
+
+    applyFrame.setVisible(true);
+    setVisible(false);
+});
 
         panel.add(text, BorderLayout.CENTER);
         panel.add(applyButton, BorderLayout.EAST);

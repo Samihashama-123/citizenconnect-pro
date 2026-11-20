@@ -76,7 +76,7 @@ public class ApplyForServiceFrame extends JFrame {
         this.service = service;
 
         setTitle("CitizenConnect Pro - Apply for Service");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 700));
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
